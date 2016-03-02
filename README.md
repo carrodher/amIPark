@@ -15,22 +15,22 @@ Proyectos y prácticas con tinyOS para TelosB como parte de la asignatura "Redes
 Añadimos dos repositorios donde se encuentran los paquetes necesarios. Para ello creamos el fichero /etc/apt/sources.list.d/tinyprod-debian.list y lo abrimos con cualquier editor `sudo vim /etc/apt/sources.list.d/tinyprod-debian.list` añadiendo las siguientes líneas:
 
 ```
-deb	http://tinyprod.net/repos/debian	squeeze		main
-deb	http://tinyprod.net/repos/debian 	msp430-46	main
+deb	http://tinyprod.net/repos/debian squeeze main
+deb	http://tinyprod.net/repos/debian msp430-46 main
 ```
 
 Instalamos la clave de seguridad del repositorio:
 
 ```
-gpg	--keyserver	keyserver.ubuntu.com	--recv-keys	34EC655A
-gpg	-a	--export	34EC655A	|	sudo	apt-key	add	-
+gpg --keyserver keyserver.ubuntu.com --recv-keys 34EC655A
+gpg -a --export 34EC655A | sudo apt-key add -
 ```
 Debe mostrar el mensaje 'OK' al finalizar. A veces es necesario cerrar y volver a abrir la terminal tras el paso anterior.
 
 Actualizamos los repositorios e instalamos los paquetes necesarios:
 ```
 sudo	apt-get	update
-sudo	apt-get	install	nesc	tinyos-tools	msp430-46	avr-tinyos
+sudo	apt-get	install nesc tinyos-tools msp430-46 avr-tinyos
 ```
 
 Descargamos TinyOS en el directorio que queramos, por ejemplo en /home/user/:
@@ -47,11 +47,11 @@ Configuramos el entorno
 ```
 export	TOSROOT="/home/user/tinyos-main"
 export	TOSDIR="$TOSROOT/tos"
-export CLASSPATH=$CLASSPATH:$TOSROOT/support/sdk/java/tinyos.jar:.
+export  CLASSPATH=$CLASSPATH:$TOSROOT/support/sdk/java/tinyos.jar:.
 export	MAKERULES="$TOSROOT/support/make/Makerules"
 export	PYTHONPATH=$PYTHONPATH:$TOSROOT/support/sdk/python
 
-echo	"setting	up	TinyOS	source	path	to	$TOSROOT"
+echo "setting up TinyOS source path to $TOSROOT"
 ```
 
 Para ello añadir lo anterior (modificando lo necesario) en el fichero .bashrc
