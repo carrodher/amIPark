@@ -1,5 +1,6 @@
 #tinyOS
 build/
+*.txt
 
 # Object files
 *.o
