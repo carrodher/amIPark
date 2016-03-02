@@ -1,3 +1,7 @@
+[![License](https://img.shields.io/badge/license-CC | By+NC-green.svg)](http://es.creativecommons.org/blog/licencias/) 
+[![Linkedin](https://img.shields.io/badge/LinkedIn-Carlos-blue.svg)](https://es.linkedin.com/in/carlosrodriguezhernandez)
+[![Twitter](https://img.shields.io/badge/Twitter-carrodher-blue.svg)](https://twitter.com/carrodher)
+
 # tinyOS
 Proyectos y prácticas con tinyOS para TelosB como parte de la asignatura "Redes de Sensores y Sistemas Autónomos"
 
