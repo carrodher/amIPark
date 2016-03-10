@@ -1,3 +1,0 @@
-COMPONENT=MaestroAppC
-include $(MAKERULES)
-

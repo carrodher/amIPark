@@ -1,3 +1,0 @@
-COMPONENT=EsclavoAppC
-include $(MAKERULES)
-
