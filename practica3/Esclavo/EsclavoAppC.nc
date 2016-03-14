@@ -3,7 +3,7 @@
 configuration EsclavoAppC {
 }
 implementation {
-// Componentes
+	// Componentes
 	components MainC;
 	components LedsC;
 	components EsclavoC as App;
@@ -24,8 +24,8 @@ implementation {
 	App.AMSend -> AMSenderC;
 	App.Receive -> AMReceiverC;
 	App -> CC2420ActiveMessageC.CC2420Packet;
-	App.ReadNotVisible -> PhotoActiveC;
-	App.ReadVisible -> TotalSolarC;
+	App.NotVisible -> PhotoActiveC;
+	App.Visible -> TotalSolarC;
 	App.Temperature -> Sht11.Temperature;
 	App.Humidity -> Sht11.Humidity;
 }

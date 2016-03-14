@@ -9,8 +9,8 @@ module EsclavoC {
 	uses interface AMSend;
 	uses interface Receive;
 	uses interface SplitControl as AMControl;
-	uses interface Read<uint16_t> as ReadVisible;
-	uses interface Read<uint16_t> as ReadNotVisible;
+	uses interface Read<uint16_t> as Visible;
+	uses interface Read<uint16_t> as NotVisible;
 	uses interface Read<uint16_t> as Temperature;
 	uses interface Read<uint16_t> as Humidity;
 }
@@ -27,29 +27,31 @@ implementation {
 	}
 
 	// Mide y enciende los leds según el tipo de medida solicitada
-	uint16_t medirTipo(uint16_t tipoMed) {
-  		// Temperatura
-  		if (tipoMed == 1) {
-  			call Leds.led0On();    		// Led 0 ON para temperatura
-  			call Leds.led1Off();   		// Led 1 OFF para temperatura
-  			call Leds.led2Off();   		// Led 2 OFF para temperatura
-  			call Temperature.read();	// Mide la temperatura
-  		}
-  		// Humedad
-  		else if (tipoMed == 2) { 
-	  		call Leds.led0Off();    // Led 0 OFF para humedad
-  			call Leds.led1On();   	// Led 1 ON para humedad
-  			call Leds.led2Off();   	// Led 2 OFF para humedad
-  			call Humidity.read();	// Mide la temperatura
-  		}
-  		// Luminosidad
-  		else if (tipoMed == 3) {
-	  		call Leds.led0Off();    	// Led 0 OFF para luminosidad
-  			call Leds.led1Off();   		// Led 1 OFF para luminosidad
-  			call Leds.led2On();   		// Led 2 ON para luminosidad
-  			// No se por qué hay dos, uno para luz visible y otro para luz no visible. Habrá que usar uno u otro
-  			call ReadVisible.read();	// Mide la luz visible
-  			call ReadNotVisible.read();	// Mide la luz no visible
+	void medirTipo(uint16_t tipoMed) {
+  		switch(tipoMed) {
+  			case(TEMPERATURA): {
+  				call Leds.led0On();    		// Led 0 ON para temperatura
+  				call Leds.led1Off();   		// Led 1 OFF para temperatura
+  				call Leds.led2Off();   		// Led 2 OFF para temperatura
+  				call Temperature.read();	// Mide la temperatura
+  				break;
+  			}
+  			case(HUMEDAD): {
+		  		call Leds.led0Off();   		// Led 0 OFF para humedad
+	  			call Leds.led1On();   		// Led 1 ON para humedad
+	  			call Leds.led2Off();   		// Led 2 OFF para humedad
+	  			call Humidity.read();		// Mide la temperatura
+	  			break;
+  			}
+  			case(LUMINOSIDAD): {
+	  			call Leds.led0Off();    	// Led 0 OFF para luminosidad
+  				call Leds.led1Off();   		// Led 1 OFF para luminosidad
+  				call Leds.led2On();   		// Led 2 ON para luminosidad
+  				// No se por qué hay dos, uno para luz visible y otro para luz no visible. Habrá que usar uno u otro
+  				call Visible.read();		// Mide la luz visible
+  				call NotVisible.read();		// Mide la luz no visible
+  				break;
+  			}
   		}
  	}
 
@@ -72,7 +74,7 @@ implementation {
 	}
 
 	// Mide la luz visible. Almacena el valor en medida. Si hay error almacena 0xFFFF
-	event void ReadVisible.readDone(error_t result, uint16_t val) {
+	event void Visible.readDone(error_t result, uint16_t val) {
   		if(result == SUCCESS) {
     		medida = val;
   		}
@@ -81,7 +83,7 @@ implementation {
   	}  
   
   	// Mide la luz no visible. Almacena el valor en medida. Si hay error almacena 0xFFFF
-  	event void ReadNotVisible.readDone(error_t result, uint16_t val) {
+  	event void NotVisible.readDone(error_t result, uint16_t val) {
   		if(result == SUCCESS) {
     		medida = val;
   		}
@@ -107,7 +109,7 @@ implementation {
 	// Comprueba la tx del pkt y marca como libre si ha terminado
 	event void AMSend.sendDone(message_t* msg, error_t err) {
 		if (&pkt == msg) {
-			busy = FALSE;			// Libre
+			busy = FALSE;	// Libre
 		}
 	}
 
@@ -117,29 +119,29 @@ implementation {
 		
 		// Si el paquete tiene la longitud correcta y es de mi maestro
 		if (len == sizeof(MaestroMsg) && pktmaestro_rx->ID_maestro == MAESTRO_ID) {
-			rssi = getRssi(msg);		// Calcula el RSSI
 			
-			// Mide y enciende los leds según el tipo de medida solicitada
-			medida = medirTipo(pktmaestro_rx->tipo);
+			rssi = getRssi(msg);			// Calcula el RSSI
+			medirTipo(pktmaestro_rx->tipo);	// Mide y enciende los leds según el tipo de medida solicitada
 
 			// Si no está ocupado forma y envía el mensaje
 			if (!busy) {
 				// Reserva memoria para el paquete
 		  		EsclavoMsg* pktesclavo_tx = (EsclavoMsg*)(call Packet.getPayload(&pkt, sizeof(EsclavoMsg)));
-          		// Reserva OK
+          		
+          		// Reserva errónea
       			if (pktesclavo_tx == NULL) {
-       				return;
+       				return 0;
        			}
 
         		// Forma el paquete a tx
 		    	pktesclavo_tx->ID_esclavo = ESCLAVO_ID;  		// Campo 1: ID esclavo
         		pktesclavo_tx->medidaRssi = rssi;      			// Campo 2: Medida RSSI
-        		pktesclavo_tx->tipo = pktmaestro_rx->tipo;      // Campo 3: Tipo de medida
+        		pktesclavo_tx->tipo = pktmaestro_rx->tipo;      // Campo 3: Tipo de medida (1 = Temperatura    2 = Humedad    3 = Luminosidad)
         		pktesclavo_tx->medida = medida;     			// Campo 4: Valor de medida
 
         		// Envía
-		    	if (call AMSend.send(pktmaestro_rx->ID_maestro, &pkt, sizeof(EsclavoMsg)) == SUCCESS) {
-		    	//							|-> Destino = Origen pkt rx
+		    	if (call AMSend.send(MAESTRO_ID, &pkt, sizeof(EsclavoMsg)) == SUCCESS) {
+		    	//						|-> Destino = Maestro
 	        		busy = TRUE;	// Ocupado
 	        	}
 			}
