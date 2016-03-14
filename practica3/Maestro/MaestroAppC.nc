@@ -3,6 +3,7 @@
 configuration MaestroAppC {
 }
 implementation {
+	// Componentes
 	components MainC;
 	components LedsC;
 	components MaestroC as App;
@@ -11,6 +12,7 @@ implementation {
 	components new AMSenderC(AM_MAESTRO);
 	components new AMReceiverC(AM_MAESTRO);
 
+	// Relaciona Interfaces con Componentes
 	App.Boot -> MainC;
 	App.Leds -> LedsC;
 	App.Timer0 -> Timer0;

@@ -2,10 +2,13 @@
 #define MAESTRO_H
 
 enum {
-	TIMER_PERIOD_MILLI = 2000,
- 	AM_MAESTRO  	   = 13,
- 	MAESTRO_ID  	   = 131,
- 	ESCLAVO_ID 		   = 132
+	TIMER_PERIOD_MILLI 	= 2000,
+ 	AM_MAESTRO  	   	= 13,
+ 	MAESTRO_ID  	   	= 131,
+ 	ESCLAVO_ID 		   	= 132,
+ 	TEMPERATURA			= 1,
+ 	HUMEDAD				= 2,
+ 	LUMINOSIDAD			= 3
 };
 
 typedef nx_struct MaestroMsg {

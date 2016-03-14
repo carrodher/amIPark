@@ -12,9 +12,9 @@ module MaestroC {
 }
 implementation {
 
+	uint16_t tipo = 0;		// 1 = Temperatura    2 = Humedad    3 = Luminosidad
 	message_t pkt;        	// Espacio para el pkt a tx
-	bool busy = FALSE;    	// Flag para comprobar el estado de la radio
-	uint16_t tipo = 0;		// 1 = Temperatura    2 = Humedad    3 = Luminosidad	
+	bool busy = FALSE;    	// Flag para comprobar el estado de la radio	
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
 	event void Boot.booted() {
@@ -23,20 +23,25 @@ implementation {
 
   	// Enciende los leds según el tipo de medida a solicitar
 	void enciendeLed(uint16_t tipoMed) {
-  		if (tipoMed == 1) {	// Temperatura LED O ON
-  			call Leds.led0On();    // Led 0 ON para temperatura
-  			call Leds.led1Off();   // Led 1 OFF para temperatura
-  			call Leds.led2Off();   // Led 2 OFF para temperatura
-  		}
-  		else if (tipoMed == 2) {	// Humedad LED 1 ON
-	  		call Leds.led0Off();    // Led 0 OFF para humedad
-  			call Leds.led1On();   	// Led 1 ON para humedad
-  			call Leds.led2Off();   	// Led 2 OFF para humedad
-  		}
-  		else if (tipoMed == 3) {	// Luminosidad LED 2 ON
-	  		call Leds.led0Off();    // Led 0 OFF para luminosidad
-  			call Leds.led1Off();   	// Led 1 OFF para luminosidad
-  			call Leds.led2On();   	// Led 2 ON para luminosidad
+		switch(tipoMed) {
+  			case(TEMPERATURA): {
+  				call Leds.led0On();    // Led 0 ON para temperatura
+  				call Leds.led1Off();   // Led 1 OFF para temperatura
+  				call Leds.led2Off();   // Led 2 OFF para temperatura
+  				break;
+  			}
+  			case(HUMEDAD): {
+		  		call Leds.led0Off();    // Led 0 OFF para humedad
+	  			call Leds.led1On();   	// Led 1 ON para humedad
+	  			call Leds.led2Off();   	// Led 2 OFF para humedad
+	  			break;
+  			}
+  			case(LUMINOSIDAD): {
+	  			call Leds.led0Off();    // Led 0 OFF para luminosidad
+  				call Leds.led1Off();   	// Led 1 OFF para luminosidad
+  				call Leds.led2On();   	// Led 2 ON para luminosidad
+  				break;
+  			}
   		}
  	}
 
@@ -72,7 +77,7 @@ implementation {
 	      	// Reserva memoria para el paquete
 	      	MaestroMsg* pktmaestro_tx = (MaestroMsg*)(call Packet.getPayload(&pkt, sizeof(MaestroMsg)));
 	     
-		    // Reserva OK
+		    // Reserva errónea
 	      	if (pktmaestro_tx == NULL) {
 		    	return;
 	      	}	
@@ -83,8 +88,9 @@ implementation {
 	      	pktmaestro_tx->tipo = tipo;   			  // Campo 3: tipo medida (1 = Temperatura    2 = Humedad    3 = Luminosidad)
 
 		    // Envía
-	    	if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MaestroMsg)) == SUCCESS) {
-	        	busy = TRUE;              // Ocupado
+	    	if (call AMSend.send(ESCLAVO_ID, &pkt, sizeof(MaestroMsg)) == SUCCESS) {
+	    	//						|-> Destino = Esclavo
+	        	busy = TRUE;	// Ocupado
 	      	}
     	}
   	}
@@ -92,7 +98,7 @@ implementation {
 	// Comprueba la tx del pkt y marca como libre si ha terminado
   	event void AMSend.sendDone(message_t* msg, error_t err) {
     	if (&pkt == msg) {
-      		busy = FALSE;   // Libre
+      		busy = FALSE;	// Libre
     	}
   	}
 
@@ -100,8 +106,8 @@ implementation {
     	if (len == sizeof(EsclavoMsg)) {
       		EsclavoMsg* pktesclavo_rx = (EsclavoMsg*)payload;   // Extrae el payload
       
-      		// Si el paquete recibido es de nuestro esclavo y tiene contenido enciende el led 1
-      		if (pktesclavo_rx->ID_esclavo == ESCLAVO_ID && pktesclavo_rx->medidaRssi != NULL)
+      		// Si el paquete recibido es de nuestro esclavo
+      		if (pktesclavo_rx->ID_esclavo == ESCLAVO_ID)
       		{
       			// No hay que tratar el paquete que llega, se ve en la base station
       		}      
