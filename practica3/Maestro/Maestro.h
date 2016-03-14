@@ -2,7 +2,7 @@
 #define MAESTRO_H
 
 enum {
-	TIMER_PERIOD_MILLI = 5000,
+	TIMER_PERIOD_MILLI = 2000,
  	AM_MAESTRO  	   = 13,
  	MAESTRO_ID  	   = 131,
  	ESCLAVO_ID 		   = 132
