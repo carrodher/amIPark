@@ -12,4 +12,4 @@ El Maestro (ID 131) envía periódicamente paquetes al Esclavo (ID 132). Cuando 
 El Esclavo (ID 132) recibe los paquetes del Maestro y tras verificar que son de su Maestro y no de otro, calcula el RSSI relativo a este mensaje. Según el tipo solicitado, hace la medida necesaria y forma un paquete con este valor y lo envía de vuelta a su Maestro. Enciende los leds en función del tipo de medida solicitado.
 
 ### Base Station
-Sirve para ver la comunicación entre ambos dispositivos.
+Sirve para ver la comunicación y los datos entre ambos dispositivos.
