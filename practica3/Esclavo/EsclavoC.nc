@@ -10,7 +10,6 @@ module EsclavoC {
 	uses interface Receive;
 	uses interface SplitControl as AMControl;
 	uses interface Read<uint16_t> as Visible;
-	uses interface Read<uint16_t> as NotVisible;
 	uses interface Read<uint16_t> as Temperature;
 	uses interface Read<uint16_t> as Humidity;
 }
@@ -47,9 +46,7 @@ implementation {
 	  			call Leds.led0Off();    	// Led 0 OFF para luminosidad
   				call Leds.led1Off();   		// Led 1 OFF para luminosidad
   				call Leds.led2On();   		// Led 2 ON para luminosidad
-  				// No se por qué hay dos, uno para luz visible y otro para luz no visible. Habrá que usar uno u otro
   				call Visible.read();		// Mide la luz visible
-  				call NotVisible.read();		// Mide la luz no visible
   				break;
   			}
   		}
@@ -58,7 +55,7 @@ implementation {
  	// Mide la humedad. Almacena el valor en medida. Si hay error almacena 0xFFFF
  	event void Humidity.readDone(error_t result, uint16_t val) {
   		if(result == SUCCESS) {
-   			medida = val;
+   			medida = -0.0000028*val*val+0.0405*val-4;
   		}
   		else 
   			medida = 0xFFFF;
@@ -67,7 +64,7 @@ implementation {
 	// Mide la temperatura. Almacena el valor en medida. Si hay error almacena 0xFFFF
 	event void Temperature.readDone(error_t result, uint16_t val) {
   		if(result == SUCCESS) {
-    		medida = val;
+    		medida = -40+0.01*val;
   		}
   		else 
   			medida = 0xFFFF;
@@ -81,15 +78,6 @@ implementation {
   		else 
   			medida = 0xFFFF;
   	}  
-  
-  	// Mide la luz no visible. Almacena el valor en medida. Si hay error almacena 0xFFFF
-  	event void NotVisible.readDone(error_t result, uint16_t val) {
-  		if(result == SUCCESS) {
-    		medida = val;
-  		}
-  		else 
-  			medida = 0xFFFF;
-    }
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
 	event void Boot.booted() {

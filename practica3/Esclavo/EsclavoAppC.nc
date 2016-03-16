@@ -12,7 +12,6 @@ implementation {
 	components new AMReceiverC(AM_ESCLAVO);
 	components CC2420ActiveMessageC;
 	components new SensirionSht11C() as Sht11;
-	components new HamamatsuS10871TsrC() as PhotoActiveC;
 	components new HamamatsuS1087ParC() as TotalSolarC;
 
 	// Relaciona Interfaces con Componentes
@@ -24,7 +23,6 @@ implementation {
 	App.AMSend -> AMSenderC;
 	App.Receive -> AMReceiverC;
 	App -> CC2420ActiveMessageC.CC2420Packet;
-	App.NotVisible -> PhotoActiveC;
 	App.Visible -> TotalSolarC;
 	App.Temperature -> Sht11.Temperature;
 	App.Humidity -> Sht11.Humidity;
