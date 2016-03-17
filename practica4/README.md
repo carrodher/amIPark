@@ -10,7 +10,7 @@
 
 A generator to send random emails with malware or clean URLs and files.
 
-![Gif with the execution example](https://pixabay.com/p-44429/?no_redirect)
+![Gif with the execution example](http://www.pd4pic.com/images/sign-symbol-safety-danger-information-warning-5.png)
 Caution: samples hosted in the "malware files" directory are real files with malware.
 
 # Script options
