@@ -10,7 +10,7 @@
 
 A generator to send random emails with malware or clean URLs and files.
 
-![Gif with the execution example](http://www.azurecoast.com/wp-content/uploads/2013/01/Stop-Viruses-and-Malware.png)
+![Malware](http://jaime-dulceguerrero.com/wp-content/uploads/2014/02/danger-32x32.png)
 Caution: samples hosted in the "malware files" directory are real files with malware.
 
 # Script options
