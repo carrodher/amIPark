@@ -4,7 +4,7 @@
 enum {
 	AM_ESCLAVO = 13,
 	MAESTRO_ID = 131,
-  	ESCLAVO_ID = 132
+	ESCLAVO_ID = 132
 };
 
 typedef nx_struct MaestroMsg {

@@ -8,9 +8,9 @@ enum {
 	TIMER_PERIOD_MILLI = 1000
 };
 
-typedef nx_struct RssiMsg{
-  nx_int16_t rssi;
-  uint_16 ID_esclavo;
+typedef nx_struct RssiMsg {
+	nx_int16_t rssi;
+	uint_16 ID_esclavo;
 } RssiMsg;
 
-#endif
+	#endif

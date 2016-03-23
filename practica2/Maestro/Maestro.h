@@ -3,9 +3,9 @@
 
 enum {
 	TIMER_PERIOD_MILLI = 1000,
- 	AM_MAESTRO  	   = 13,
- 	MAESTRO_ID  	   = 131,
- 	ESCLAVO_ID 		   = 132
+	AM_MAESTRO  	   = 13,
+	MAESTRO_ID  	   = 131,
+	ESCLAVO_ID 		   = 132
 };
 
 typedef nx_struct MaestroMsg {

@@ -1,3 +1,2 @@
 COMPONENT=MaestroAppC
 include $(MAKERULES)
-
