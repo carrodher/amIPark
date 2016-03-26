@@ -11,6 +11,7 @@ implementation {
 	components ActiveMessageC;
 	components new AMSenderC(AM_MAESTRO);
 	components new AMReceiverC(AM_MAESTRO);
+	components RandomC;
 
 	// Relaciona Interfaces con Componentes
 	App.Boot -> MainC;
@@ -21,4 +22,5 @@ implementation {
 	App.AMControl -> ActiveMessageC;
 	App.AMSend -> AMSenderC;
 	App.Receive -> AMReceiverC;
+	App.Random -> RandomC;
 }

@@ -9,36 +9,60 @@ module JefeC {
 	uses interface AMSend;
 	uses interface Receive;
 	uses interface SplitControl as AMControl;
+	uses interface Random;
 }
 implementation {
-	uint16_t tipo = 0;		// 1 = Temperatura    2 = Humedad    3 = Luminosidad
-	message_t pkt;        	// Espacio para el pkt a tx
-	bool busy = FALSE;    	// Flag para comprobar el estado de la radio
+	uint16_t number = 0;				// Número aleatorio
+	uint16_t first = ESCLAVO_TEMP_ID;	// 1º slot (defecto: Temperatura)
+	uint16_t second = ESCLAVO_HUM_ID;	// 2º slot (defecto: Humedad)
+	uint16_t third = ESCLAVO_LUM_ID;	// 3º slot (defecto: Luminosidad)
+	message_t pkt;        				// Espacio para el pkt a tx
+	bool busy = FALSE;    				// Flag para comprobar el estado de la radio
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
 	event void Boot.booted() {
 		call AMControl.start();
 	}
 
-	// Enciende los leds según el tipo de medida a solicitar
-	void enciendeLed(uint16_t tipoMed) {
-		switch(tipoMed) {
-			case(TEMPERATURA): {
-				call Leds.led0On();    // Led 0 ON para temperatura
-				call Leds.led1Off();   // Led 1 OFF para temperatura
-				call Leds.led2Off();   // Led 2 OFF para temperatura
+	// Elige de manera pseudo-aleatoria el orden de los slots
+	void randomSlot() {
+		// Genera un valor aleatorio entre ESCLAVO_TEMP_ID , ESCLAVO_HUM_ID y ESCLAVO_LUM_ID y lo asigna al 1º slot
+		first = call Random.rand16()%3+131;
+		// El 2º y 3º slot se asignan en función del primero
+		switch(first) {
+			// Genera un número aleatorio entre 0 y 1 para definir el 2º y 3º slot
+			number = call Random.rand16()%2;
+			case(ESCLAVO_TEMP_ID): {
+				if (number == 0){		// ESCLAVO_TEMP_ID - ESCLAVO_LUM_ID - ESCLAVO_HUM_ID
+					second = ESCLAVO_LUM_ID;
+					third = ESCLAVO_HUM_ID;
+				}
+				else {					// ESCLAVO_TEMP_ID - ESCLAVO_HUM_ID - ESCLAVO_LUM_ID
+					second = ESCLAVO_HUM_ID;
+					third = ESCLAVO_LUM_ID;
+				}
 				break;
 			}
-			case(HUMEDAD): {
-				call Leds.led0Off();    // Led 0 OFF para humedad
-				call Leds.led1On();   	// Led 1 ON para humedad
-				call Leds.led2Off();   	// Led 2 OFF para humedad
+			case(ESCLAVO_HUM_ID): {
+				if (number == 0){		// ESCLAVO_HUM_ID - ESCLAVO_TEMP_ID - ESCLAVO_LUM_ID
+					second = ESCLAVO_TEMP_ID;
+					third = ESCLAVO_LUM_ID;
+				}
+				else {					// ESCLAVO_HUM_ID - ESCLAVO_LUM_ID - ESCLAVO_TEMP_ID
+					second = ESCLAVO_LUM_ID;
+					third = ESCLAVO_TEMP_ID;
+				}
 				break;
 			}
-			case(LUMINOSIDAD): {
-				call Leds.led0Off();    // Led 0 OFF para luminosidad
-				call Leds.led1Off();   	// Led 1 OFF para luminosidad
-				call Leds.led2On();   	// Led 2 ON para luminosidad
+			case(ESCLAVO_LUM_ID): {
+				if (number == 0) {		// ESCLAVO_LUM_ID - ESCLAVO_TEMP_ID -ESCLAVO_HUM_ID
+					second = ESCLAVO_TEMP_ID;
+					third = ESCLAVO_HUM_ID;
+				}
+				else {					// ESCLAVO_LUM_ID - ESCLAVO_HUM_ID -ESCLAVO_TEMP_ID
+					second = ESCLAVO_HUM_ID;
+					third = ESCLAVO_TEMP_ID ;
+				}
 				break;
 			}
 		}
@@ -60,16 +84,6 @@ implementation {
 
 	// Maneja el temporizador
 	event void Timer0.fired() {
-		// Hace que el tipo de medida vaya rotando (1,2,3) cada vez que expira el timer0
-		if (tipo == 3) {
-			tipo = 1;
-		}
-		else {
-			tipo++;
-		}
-
-		// Enciende los leds según el tipo de medida a solicitar
-		enciendeLed(tipo);
 
 		// Si no está ocupado forma y envía el mensaje
 		if (!busy) {
@@ -81,14 +95,18 @@ implementation {
 				return;
 			}
 
-			// Forma el paquete a tx
-			pktmaestro_tx->ID_maestro = MAESTRO_ID;   // Campo 1: ID maestro
-			pktmaestro_tx->ID_esclavo = ESCLAVO_ID;   // Campo 2: ID esclavo
-			pktmaestro_tx->tipo = tipo;   			  // Campo 3: tipo medida (1 = Temperatura    2 = Humedad    3 = Luminosidad)
+			/*** FORMA EL PAQUETE ***/
+			// Campo 1: ID_maestro
+			pktmaestro_tx->ID_maestro = MAESTRO_ID;
+			// Campos 2, 3 y 4: Orden de los slots
+			randomSlot();
+			pktmaestro_tx->first = first;
+			pktmaestro_tx->second = second;
+			pktmaestro_tx->third = third;
 
 			// Envía
-			if (call AMSend.send(ESCLAVO_ID, &pkt, sizeof(MaestroMsg)) == SUCCESS) {
-				//						|-> Destino = Esclavo
+			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MaestroMsg)) == SUCCESS) {
+				//						|-> Destino = Difusión
 				busy = TRUE;	// Ocupado
 			}
 		}
@@ -105,10 +123,15 @@ implementation {
 		if (len == sizeof(EsclavoMsg)) {
 			EsclavoMsg* pktesclavo_rx = (EsclavoMsg*)payload;   // Extrae el payload
 
-			// Si el paquete recibido es de nuestro esclavo
-			if (pktesclavo_rx->ID_esclavo == ESCLAVO_ID)
-			{
-				// No hay que tratar el paquete que llega, se ve en la base station
+			// Determina el tipo de medida
+			if (pktesclavo_rx->tipo == TEMPERATURA) {
+				//Nos ha llegado una medida de temperatura
+			}
+			else if (pktesclavo_rx->tipo == HUMEDAD) {
+				//Nos ha llegado una medida de humedad
+			}
+			else if (pktesclavo_rx->tipo == LUMINOSIDAD) {
+				//Nos ha llegado una medida de luminosidad
 			}
 		}
 		return msg;
