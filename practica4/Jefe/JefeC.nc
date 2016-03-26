@@ -33,33 +33,33 @@ implementation {
 			// Genera un número aleatorio entre 0 y 1 para definir el 2º y 3º slot
 			number = call Random.rand16()%2;
 			case(ESCLAVO_TEMP_ID): {
-				if (number == 0){		// ESCLAVO_TEMP_ID - ESCLAVO_LUM_ID - ESCLAVO_HUM_ID
+				if (number == 0){		// TEMP - LUM - HUM
 					second = ESCLAVO_LUM_ID;
 					third = ESCLAVO_HUM_ID;
 				}
-				else {					// ESCLAVO_TEMP_ID - ESCLAVO_HUM_ID - ESCLAVO_LUM_ID
+				else {					// TEMP - HUM - LUM
 					second = ESCLAVO_HUM_ID;
 					third = ESCLAVO_LUM_ID;
 				}
 				break;
 			}
 			case(ESCLAVO_HUM_ID): {
-				if (number == 0){		// ESCLAVO_HUM_ID - ESCLAVO_TEMP_ID - ESCLAVO_LUM_ID
+				if (number == 0){		// HUM - TEMP - LUM
 					second = ESCLAVO_TEMP_ID;
 					third = ESCLAVO_LUM_ID;
 				}
-				else {					// ESCLAVO_HUM_ID - ESCLAVO_LUM_ID - ESCLAVO_TEMP_ID
+				else {					// HUM - LUM - TEMP
 					second = ESCLAVO_LUM_ID;
 					third = ESCLAVO_TEMP_ID;
 				}
 				break;
 			}
 			case(ESCLAVO_LUM_ID): {
-				if (number == 0) {		// ESCLAVO_LUM_ID - ESCLAVO_TEMP_ID -ESCLAVO_HUM_ID
+				if (number == 0) {		// LUM - TEMP - HUM
 					second = ESCLAVO_TEMP_ID;
 					third = ESCLAVO_HUM_ID;
 				}
-				else {					// ESCLAVO_LUM_ID - ESCLAVO_HUM_ID -ESCLAVO_TEMP_ID
+				else {					// LUM - HUM - TEMP
 					second = ESCLAVO_HUM_ID;
 					third = ESCLAVO_TEMP_ID ;
 				}
