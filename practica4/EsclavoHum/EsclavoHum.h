@@ -2,6 +2,7 @@
 #define ESCLAVO_H
 
 enum {
+	TIMER_PERIOD_MILLI 	= 4000,
 	AM_ESCLAVO 			= 13,
 	MAESTRO_ID 			= 130,
 	ESCLAVO_TEMP_ID    	= 131,
@@ -9,7 +10,8 @@ enum {
 	ESCLAVO_LUM_ID    	= 133,
 	TEMPERATURA			= 1,
 	HUMEDAD				= 2,
-	LUMINOSIDAD			= 3
+	LUMINOSIDAD			= 3,
+	SLOTS				= 4
 };
 
 typedef nx_struct MaestroMsg {
