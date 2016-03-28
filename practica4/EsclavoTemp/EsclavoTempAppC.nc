@@ -10,6 +10,7 @@ implementation {
 	components ActiveMessageC;
 	components new AMSenderC(AM_ESCLAVO);
 	components new AMReceiverC(AM_ESCLAVO);
+	components new TimerMilliC() as Timer0;
 	components CC2420ActiveMessageC;
 	components new SensirionSht11C() as Sht11;
 
@@ -21,6 +22,7 @@ implementation {
 	App.AMControl -> ActiveMessageC;
 	App.AMSend -> AMSenderC;
 	App.Receive -> AMReceiverC;
+	App.Timer0 -> Timer0;
 	App -> CC2420ActiveMessageC.CC2420Packet;
 	App.Temperature -> Sht11.Temperature;
 }
