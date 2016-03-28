@@ -84,7 +84,6 @@ implementation {
 
 	// Maneja el temporizador
 	event void Timer0.fired() {
-
 		// Si no está ocupado forma y envía el mensaje
 		if (!busy) {
 			// Reserva memoria para el paquete
@@ -108,6 +107,8 @@ implementation {
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MaestroMsg)) == SUCCESS) {
 				//						|-> Destino = Difusión
 				busy = TRUE;	// Ocupado
+				call Leds.led0Off();   // Led 0 Off
+				call Leds.led1On();    // Led 1 ON cuando envío mi paquete
 			}
 		}
 	}
@@ -122,6 +123,9 @@ implementation {
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
 		if (len == sizeof(EsclavoMsg)) {
 			EsclavoMsg* pktesclavo_rx = (EsclavoMsg*)payload;   // Extrae el payload
+
+			call Leds.led0On();   	// Led 0 ON cuando recibo un paquete
+			call Leds.led1Off();    // Led 1 OFF
 
 			// Determina el tipo de medida
 			if (pktesclavo_rx->tipo == TEMPERATURA) {

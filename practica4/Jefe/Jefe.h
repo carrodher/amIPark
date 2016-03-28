@@ -10,7 +10,8 @@ enum {
 	ESCLAVO_LUM_ID    	= 133,
 	TEMPERATURA			= 1,
 	HUMEDAD				= 2,
-	LUMINOSIDAD			= 3
+	LUMINOSIDAD			= 3,
+	SLOTS				= 4
 };
 
 typedef nx_struct MaestroMsg {
