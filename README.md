@@ -11,7 +11,7 @@ Proyectos y prácticas con tinyOS para TelosB como parte de la asignatura "Redes
 * [Uso](#uso)
 
 ## Instalación
-
+shhshshshs
 Añadimos dos repositorios donde se encuentran los paquetes necesarios. Para ello creamos el fichero /etc/apt/sources.list.d/tinyprod-debian.list y lo abrimos con cualquier editor `sudo vim /etc/apt/sources.list.d/tinyprod-debian.list` añadiendo las siguientes líneas:
 
 ```
