@@ -7,6 +7,8 @@ En este proyecto se pretende realizar un sistema de control de un párking intel
 
 Mediante algoritmos de posicionamiento, se determina cuándo el coche se aproxima al párking desde la calle y cuándo abandona el párking. Una vez dentro del párking se indica qué plazas hay libres para que aparque, y una vez aparcado se registra la plaza.
 
+![alt tag](https://github.com/carrodher/tinyOS/blob/master/proyecto/diagramas/esquemaInicial.png "Esquema inicial")
+
 ## Componentes
 - **Nodo móvil**
 
