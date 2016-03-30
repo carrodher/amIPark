@@ -28,6 +28,7 @@ Mediante algoritmos de posicionamiento, se determina cuándo el coche se aproxim
             - Determinar cuándo un coche se aproxima a cualquiera de las puertas
             - Llevar un registro de las plazas libres y ocupadas dentro del párking
             - Sugerir plazas libres cuando entra un coche.
+
      En un futuro se irán añadiendo nuevas mejoras y funcionalidades a los nodos fijos.
 
     2. _Base station_: 
