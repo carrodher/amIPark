@@ -22,15 +22,16 @@ Mediante algoritmos de posicionamiento, se determina cuándo el coche se aproxim
     Todos los nodos actúan como nodos normales. Estos nodos se encargan de realizar las tareas relativa a las **puertas** y las tareas de **localización** en el interior del párking, para ello hace uso de los algoritmos vistos en clase.
 
     Funciones según la tarea:
-        - Puertas:
-            - Dormir/Despertar al nodo móvil
-            - Registrar Entradas/Salidas
-            - Encender semáforo led sincronizado con entradas y salidas de coches
+        * Puertas:
 
-        - Localización:
-            - Determinar cuándo un coche se aproxima a cualquiera de las puertas
-            - Llevar un registro de las plazas libres y ocupadas dentro del párking
-            - Sugerir plazas libres cuando entra un coche.
+            ..* Dormir/Despertar al nodo móvil
+            ..* Registrar Entradas/Salidas
+            ..* Encender semáforo led sincronizado con entradas y salidas de coches
+
+        * Localización:
+            ..* Determinar cuándo un coche se aproxima a cualquiera de las puertas
+            ..* Llevar un registro de las plazas libres y ocupadas dentro del párking
+            ..* Sugerir plazas libres cuando entra un coche.
 
      En un futuro se irán añadiendo nuevas mejoras y funcionalidades a los nodos fijos.
 
