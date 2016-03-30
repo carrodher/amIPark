@@ -11,6 +11,7 @@ Mediante algoritmos de posicionamiento, se determina cuándo el coche se aproxim
 
 ## Componentes
 1. **Nodo móvil:**
+
     Este nodo se encuentra en los robots móviles que simulan los coches, es un nodo que va **dormido** hasta que detecta que está cerca del párking al recibir paquetes de los nodos de la puerta. En ese momento se **despierta** para poder obtener la información de las plazas libres.
 
     Una vez que el robot aparca en una de las plazas libres que se le ha indicado, el nodo se vuelve a dormir hasta que se pone de neuvo en marcha el robot para salir. Cuando sale del párking se vuelve a dormir el nodo hasta que se aproxime nuevamente a la entrada.
