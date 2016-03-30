@@ -10,7 +10,7 @@ Mediante algoritmos de posicionamiento, se determina cuándo el coche se aproxim
 ![alt tag](https://github.com/carrodher/tinyOS/blob/master/proyecto/diagramas/esquemaInicial.png "Esquema inicial")
 
 ## Componentes
-- **Nodo móvil**
+1. **Nodo móvil**
 
     Este nodo se encuentra en los robots móviles que simulan los coches, es un nodo que va **dormido** hasta que detecta que está cerca del párking al recibir paquetes de los nodos de la puerta. En ese momento se **despierta** para poder obtener la información de las plazas libres.
 
@@ -23,15 +23,14 @@ Mediante algoritmos de posicionamiento, se determina cuándo el coche se aproxim
 
     Funciones según la tarea:
         * Puertas:
-
-            ..* Dormir/Despertar al nodo móvil
-            ..* Registrar Entradas/Salidas
-            ..* Encender semáforo led sincronizado con entradas y salidas de coches
+            * Dormir/Despertar al nodo móvil
+            * Registrar Entradas/Salidas
+            * Encender semáforo led sincronizado con entradas y salidas de coches
 
         * Localización:
-            ..* Determinar cuándo un coche se aproxima a cualquiera de las puertas
-            ..* Llevar un registro de las plazas libres y ocupadas dentro del párking
-            ..* Sugerir plazas libres cuando entra un coche.
+            * Determinar cuándo un coche se aproxima a cualquiera de las puertas
+            * Llevar un registro de las plazas libres y ocupadas dentro del párking
+            * Sugerir plazas libres cuando entra un coche.
 
      En un futuro se irán añadiendo nuevas mejoras y funcionalidades a los nodos fijos.
 
