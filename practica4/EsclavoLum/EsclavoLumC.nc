@@ -63,7 +63,6 @@ implementation {
 			// Forma el paquete a tx
 			pktesclavo_tx->ID_esclavo = ESCLAVO_LUM_ID;		// Campo 1: ID esclavo
 			pktesclavo_tx->medidaRssi = rssi;      				// Campo 2: Medida RSSI
-			pktesclavo_tx->tipo = LUMINOSIDAD;				    // Campo 3: Tipo de medida (1 = Temperatura    2 = Humedad    3 = Luminosidad)
 			pktesclavo_tx->medida = luminosidad;     			// Campo 4: Valor de medida
 
 			// Envía

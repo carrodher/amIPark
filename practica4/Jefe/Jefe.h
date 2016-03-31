@@ -24,7 +24,6 @@ typedef nx_struct MaestroMsg {
 typedef nx_struct EsclavoMsg {
 	nx_uint16_t ID_esclavo;		// ID esclavo = ID origen
 	nx_uint16_t medidaRssi;		// Valor de la medida RSSI
-	nx_uint16_t tipo;			// Tipo de medida solicitada
 	nx_uint16_t medida;			// Valor de la medida solicitada
 } EsclavoMsg;
 
