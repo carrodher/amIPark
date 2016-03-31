@@ -27,11 +27,12 @@ implementation {
 	// Elige de manera pseudo-aleatoria el orden de los slots
 	void randomSlot() {
 		// Genera un valor aleatorio entre ESCLAVO_TEMP_ID , ESCLAVO_HUM_ID y ESCLAVO_LUM_ID y lo asigna al 1º slot
-		first = call Random.rand16()%3+131;
-		// El 2º y 3º slot se asignan en función del primero
+		first = call Random.rand16()%3+131;		// Realmente genera 131, 132 o 133
+		// Genera un número aleatorio entre 0 y 1 para definir el 2º y 3º slot
+		number = call Random.rand16()%2;
+		/* El 2º y 3º slot se asignan en función del primero, para ello primero determina el ID que ha tocado en el 1º slot
+		para luego determinar aleatoriamente el orden del 2º y 3º slot entre los IDs que no han tocado en el 1º slot */
 		switch(first) {
-			// Genera un número aleatorio entre 0 y 1 para definir el 2º y 3º slot
-			number = call Random.rand16()%2;
 			case(ESCLAVO_TEMP_ID): {
 				if (number == 0){		// TEMP - LUM - HUM
 					second = ESCLAVO_LUM_ID;
