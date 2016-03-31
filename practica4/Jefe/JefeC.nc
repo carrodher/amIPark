@@ -124,18 +124,27 @@ implementation {
 		if (len == sizeof(EsclavoMsg)) {
 			EsclavoMsg* pktesclavo_rx = (EsclavoMsg*)payload;   // Extrae el payload
 
-			call Leds.led0On();   	// Led 0 ON cuando recibo un paquete
-			call Leds.led1Off();    // Led 1 OFF
+			//call Leds.led0On();   	// Led 0 ON cuando recibo un paquete
+			//call Leds.led1Off();    // Led 1 OFF
 
 			// Determina el tipo de medida
 			if (pktesclavo_rx->tipo == TEMPERATURA) {
 				//Nos ha llegado una medida de temperatura
+				call Leds.led0On();   // Led 0 On para temperatura
+				call Leds.led1Off();	// Led 0 Off
+				call Leds.led2Off();  // Led 0 Off
 			}
 			else if (pktesclavo_rx->tipo == HUMEDAD) {
 				//Nos ha llegado una medida de humedad
+				call Leds.led0Off();   // Led 0 Off
+				call Leds.led1On();    // Led 1 On para humedad
+				call Leds.led2Off();	 // Led 2 Off
 			}
 			else if (pktesclavo_rx->tipo == LUMINOSIDAD) {
 				//Nos ha llegado una medida de luminosidad
+				call Leds.led0Off();   // Led 0 Off
+				call Leds.led1Off();   // Led 1 Off
+				call Leds.led2On();    //Led 2 On para luminosidad
 			}
 		}
 		return msg;
