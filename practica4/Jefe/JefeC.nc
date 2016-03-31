@@ -128,19 +128,19 @@ implementation {
 			//call Leds.led1Off();    // Led 1 OFF
 
 			// Determina el tipo de medida
-			if (pktesclavo_rx->tipo == TEMPERATURA) {
+			if (pktesclavo_rx->ID_esclavo == ESCLAVO_TEMP_ID) {
 				//Nos ha llegado una medida de temperatura
 				call Leds.led0On();   // Led 0 On para temperatura
 				call Leds.led1Off();	// Led 0 Off
 				call Leds.led2Off();  // Led 0 Off
 			}
-			else if (pktesclavo_rx->tipo == HUMEDAD) {
+			else if (pktesclavo_rx->ID_esclavo == ESCLAVO_HUM_ID) {
 				//Nos ha llegado una medida de humedad
 				call Leds.led0Off();   // Led 0 Off
 				call Leds.led1On();    // Led 1 On para humedad
 				call Leds.led2Off();	 // Led 2 Off
 			}
-			else if (pktesclavo_rx->tipo == LUMINOSIDAD) {
+			else if (pktesclavo_rx->ID_esclavo == ESCLAVO_LUM_ID) {
 				//Nos ha llegado una medida de luminosidad
 				call Leds.led0Off();   // Led 0 Off
 				call Leds.led1Off();   // Led 1 Off
