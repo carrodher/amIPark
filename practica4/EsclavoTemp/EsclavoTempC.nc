@@ -103,12 +103,12 @@ implementation {
 			// 2º slot => Esperar 1 slot y Transmitir
 			else if (pktmaestro_rx->second == ESCLAVO_TEMP_ID) {
 				// Espera 1 slot = Periodo/nº slots
-				call Timer0.startPeriodic(TIMER_PERIOD_MILLI/SLOTS);
+				call Timer0.startPeriodic(pktmaestro_rx->Tslot);
 			}
 			// 3º slot => Esperar 2 slots y Transmitir
 			else if (pktmaestro_rx->third == ESCLAVO_TEMP_ID) {
 				// Espera 2 slots = 2*Periodo/nº slots
-				call Timer0.startPeriodic(2*TIMER_PERIOD_MILLI/SLOTS);
+				call Timer0.startPeriodic(2*pktmaestro_rx->Tslot);
 			}
 			// En cualquiera de los casos cuando expira el temporizador dirige a "event void Timer0.fired()
 		}

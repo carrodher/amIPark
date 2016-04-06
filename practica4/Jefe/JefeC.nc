@@ -16,6 +16,7 @@ implementation {
 	uint16_t first = ESCLAVO_TEMP_ID;	// 1º slot (defecto: Temperatura)
 	uint16_t second = ESCLAVO_HUM_ID;	// 2º slot (defecto: Humedad)
 	uint16_t third = ESCLAVO_LUM_ID;	// 3º slot (defecto: Luminosidad)
+	uint16_t fourth = MAESTRO_ID; 		// 4º slot (Siempre Maestro)
 	message_t pkt;        				// Espacio para el pkt a tx
 	bool busy = FALSE;    				// Flag para comprobar el estado de la radio
 
@@ -98,11 +99,15 @@ implementation {
 			/*** FORMA EL PAQUETE ***/
 			// Campo 1: ID_maestro
 			pktmaestro_tx->ID_maestro = MAESTRO_ID;
-			// Campos 2, 3 y 4: Orden de los slots
+			// Campo 2: Tslot
+			pktmaestro_tx->Tslot = TIMER_PERIOD_MILLI/SLOTS;
+			// Campos 3, 4 y 5: Orden de los slots
 			randomSlot();
 			pktmaestro_tx->first = first;
 			pktmaestro_tx->second = second;
 			pktmaestro_tx->third = third;
+			// Campo 6: Último slot siempre para el Jefe
+			pktmaestro_tx->fourth = fourth;
 
 			// Envía
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MaestroMsg)) == SUCCESS) {

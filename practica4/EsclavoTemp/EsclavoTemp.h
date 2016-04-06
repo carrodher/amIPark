@@ -2,7 +2,7 @@
 #define ESCLAVO_H
 
 enum {
-	TIMER_PERIOD_MILLI 	= 4000,
+	TIMER_PERIOD_MILLI 	= 5000,
 	AM_ESCLAVO 			= 13,
 	MAESTRO_ID 			= 130,
 	ESCLAVO_TEMP_ID    	= 131,
@@ -11,14 +11,16 @@ enum {
 	TEMPERATURA			= 1,
 	HUMEDAD				= 2,
 	LUMINOSIDAD			= 3,
-	SLOTS				= 4
+	SLOTS				= 5
 };
 
 typedef nx_struct MaestroMsg {
 	nx_uint16_t ID_maestro;		// ID maestro = ID origen
+	nx_uint16_t Tslot;			// Tiempo de slot
 	nx_uint16_t first;			// 1º slot para este esclavo
 	nx_uint16_t second;			// 2º slot para este esclavo
 	nx_uint16_t third;			// 3º slot para este esclavo
+	nx_uint16_t fourth;			// 4º slot para este esclavo
 } MaestroMsg;
 
 typedef nx_struct EsclavoMsg {
