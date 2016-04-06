@@ -113,7 +113,7 @@ implementation {
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MaestroMsg)) == SUCCESS) {
 				//						|-> Destino = Difusión
 				busy = TRUE;	// Ocupado
-				// Enciende los 3 veces cuando envía el paquete que organiza los slots
+				// Enciende los 3 leds cuando envía el paquete que organiza los slots
 				call Leds.led0On();
 				call Leds.led1On();
 				call Leds.led2On();

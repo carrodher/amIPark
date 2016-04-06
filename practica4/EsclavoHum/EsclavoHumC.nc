@@ -98,17 +98,17 @@ implementation {
 			// 1º slot => Transmitir
 			if (pktmaestro_rx->first == ESCLAVO_HUM_ID) {
 				// No espera nada
-				call Timer0.startPeriodic(0);
+				call Timer0.startOneShot(1);
 			}
 			// 2º slot => Esperar 1 slot y Transmitir
 			else if (pktmaestro_rx->second == ESCLAVO_HUM_ID) {
 				// Espera 1 slot = Periodo/nº slots
-				call Timer0.startPeriodic(pktmaestro_rx->Tslot);
+				call Timer0.startOneShot(pktmaestro_rx->Tslot);
 			}
 			// 3º slot => Esperar 2 slots y Transmitir
 			else if (pktmaestro_rx->third == ESCLAVO_HUM_ID) {
 				// Espera 2 slots = 2*Periodo/nº slots
-				call Timer0.startPeriodic(2*pktmaestro_rx->Tslot);
+				call Timer0.startOneShot(2*pktmaestro_rx->Tslot);
 			}
 			// En cualquiera de los casos cuando expira el temporizador dirige a "event void Timer0.fired()
 		}
