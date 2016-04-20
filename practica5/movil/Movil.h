@@ -22,7 +22,7 @@ typedef nx_struct MovilMsg {
 
 typedef nx_struct FijoMsg {
 	nx_uint16_t ID_fijo;		// ID fijo = ID origen
-	nx_uint16_t medidaRssi;		// Valor de la medida RSSI
+	nx_int16_t medidaRssi;		// Valor de la medida RSSI
 } FijoMsg;
 
 #endif

@@ -28,9 +28,6 @@ implementation {
 	else{
  		rssi2=rssi-45;
 	}
-
-
-
 		return (uint16_t) rssi2;
 	}
 

@@ -18,6 +18,14 @@ implementation {
 	message_t pkt;        			// Espacio para el pkt a tx
 	bool busy = FALSE;    			// Flag para comprobar el estado de la radio
 
+	//variables nodos fijos
+	int16_t rssi2_n1;
+	int16_t rssi2_n2;
+	int16_t rssi2_n3;
+
+	float a = -10.302;
+	float b = -1.678;
+
 	// Se ejecuta al alimentar t-mote. Arranca la radio
 	event void Boot.booted() {
 		call AMControl.start();
@@ -80,6 +88,11 @@ implementation {
 		}
 	}
 
+	uint8_t getDistance(int16_t rssiX){
+
+		return exp((rssiX-b)/a);
+	}
+
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
 		if (len == sizeof(FijoMsg)) {
 			FijoMsg* pktfijo_rx = (FijoMsg*)payload;   // Extrae el payload
@@ -88,7 +101,7 @@ implementation {
 			if (pktfijo_rx->ID_fijo == FIJO1_ID) {
 				//Nos ha llegado un paquete del nodo fijo 1
 
-
+				rssi2_n1=getDistance(pktfijo_rx->medidaRssi);
 
 				call Leds.led0On();   	// Led 0 On para fijo 1
 				call Leds.led1Off();	// Led 0 Off
@@ -96,12 +109,20 @@ implementation {
 			}
 			else if (pktfijo_rx->ID_fijo == FIJO2_ID) {
 				//Nos ha llegado un paquete del nodo fijo 1
+
+				rssi2_n2=getDistance(pktfijo_rx->medidaRssi);
+
+
 				call Leds.led0Off();   	// Led 0 Off
 				call Leds.led1On();    	// Led 1 On para fijo 2
 				call Leds.led2Off();	// Led 2 Off
 			}
 			else if (pktfijo_rx->ID_fijo == FIJO3_ID) {
 				//Nos ha llegado un paquete del nodo fijo 1
+
+				rssi2_n3=getDistance(pktfijo_rx->medidaRssi);
+
+
 				call Leds.led0Off();   	// Led 0 Off
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2On();    	// Led 2 On para fijo 2
