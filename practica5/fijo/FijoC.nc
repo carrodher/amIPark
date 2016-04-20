@@ -31,7 +31,7 @@ implementation {
 
 
 
-		return (uint16_t) rss2;
+		return (uint16_t) rssi2;
 	}
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
