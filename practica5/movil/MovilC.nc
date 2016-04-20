@@ -1,4 +1,5 @@
 #include "Movil.h"
+#include <math.h>
 
 module MovilC {
 	uses interface Boot;
@@ -110,7 +111,7 @@ implementation {
 				//Nos ha llegado un paquete del nodo fijo 1
 
 				distance_n1=getDistance(pktfijo_rx->medidaRssi);
-				w_n1=1/(distance_n1^p);
+				w_n1=1/(pow(distance_n1,p));
 
 				call Leds.led0On();   	// Led 0 On para fijo 1
 				call Leds.led1Off();	// Led 0 Off
@@ -120,7 +121,7 @@ implementation {
 				//Nos ha llegado un paquete del nodo fijo 1
 
 				distance_n2=getDistance(pktfijo_rx->medidaRssi);
-				w_n2=1/(distance_n2^p);
+				w_n2=1/(pow(distance_n2,p));
 
 
 				call Leds.led0Off();   	// Led 0 Off
@@ -131,7 +132,7 @@ implementation {
 				//Nos ha llegado un paquete del nodo fijo 1
 
 				distance_n3=getDistance(pktfijo_rx->medidaRssi);
-				w_n3=1/(distance_n3^p);
+				w_n3=1/(pow(distance_n3,p));
 
 
 				call Leds.led0Off();   	// Led 0 Off
