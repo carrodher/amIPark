@@ -1,9 +1,9 @@
-#ifndef MOVIL_H
-#define MOVIL_H
+#ifndef FIJO_H
+#define FIJO_H
 
 enum {
 	TIMER_PERIOD_MILLI 	= 5000,
-	AM_MOVIL 			= 13,
+	AM_FIJO 			= 13,
 	MOVIL_ID 			= 130,
 	FIJO1_ID   			= 131,
 	FIJO2_ID  			= 132,
