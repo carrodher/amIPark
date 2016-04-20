@@ -14,19 +14,19 @@ module FijoC {
 implementation {
 	message_t pkt;			   	// Espacio para el pkt a tx
 	bool busy = FALSE;		 	// Flag para comprobar el estado de la radio
-	uint8_t rssi; // Se extrae en 8 bits sin signo
-	int16_t rssi2; // Se calcula en 16 bits con signo: la potencia recibida estará entre -10 y -90 dBm
+	uint8_t rssi;			 	// Se extrae en 8 bits sin signo
+	int16_t rssi2; 				// Se calcula en 16 bits con signo: la potencia recibida estará entre -10 y -90 dBm
 
 	// Obtiene el valor RSSI del paquete recibido
 	uint16_t getRssi(message_t *msg){
 
-	rssi=call CC2420Packet.getRssi(msg);
-	if(rssi>=128){
- 		rssi2=rssi-45-256;
-	}
-	else{
- 		rssi2=rssi-45;
-	}
+		rssi=call CC2420Packet.getRssi(msg);
+		if(rssi >= 128){
+			rssi2 = rssi-45-256;
+		}
+		else{
+			rssi2 = rssi-45;
+		}
 		return (uint16_t) rssi2;
 	}
 
@@ -58,8 +58,10 @@ implementation {
 			}
 
 			// Forma el paquete a tx
-			pktfijo_tx->ID_fijo = FIJO1_ID;		  	// Campo 1: ID fijo 1
-			pktfijo_tx->medidaRssi = rssi;      		// Campo 2: Medida RSSI
+			pktfijo_tx->ID_fijo = FIJO2_ID;		// Campo 1: ID fijo 1
+			pktfijo_tx->medidaRssi = rssi;      // Campo 2: Medida RSSI
+			pktfijo_tx->x = COOR2_X;  			// Campo 3: Coordenada X
+			pktfijo_tx->y = COOR2_Y;			// Campo 4: Coordenada Y
 
 			// Envía
 			if (call AMSend.send(MOVIL_ID, &pkt, sizeof(FijoMsg)) == SUCCESS) {
@@ -91,17 +93,17 @@ implementation {
 
 			// Comprueba el slot que se le ha asignado
 			// 1º slot => Transmitir
-			if (pktmovil_rx->first == FIJO1_ID) {
+			if (pktmovil_rx->first == FIJO2_ID) {
 				// No espera nada
 				call Timer0.startOneShot(1);
 			}
 			// 2º slot => Esperar 1 slot y Transmitir
-			else if (pktmovil_rx->second == FIJO1_ID) {
+			else if (pktmovil_rx->second == FIJO2_ID) {
 				// Espera 1 slot = Periodo/nº slots
 				call Timer0.startOneShot(pktmovil_rx->Tslot);
 			}
 			// 3º slot => Esperar 2 slots y Transmitir
-			else if (pktmovil_rx->third == FIJO1_ID) {
+			else if (pktmovil_rx->third == FIJO2_ID) {
 				// Espera 2 slots = 2*Periodo/nº slots
 				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
 			}
