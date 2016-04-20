@@ -15,10 +15,23 @@ implementation {
 	uint16_t rssi;			   	// Almacena la medida de RSSI
 	message_t pkt;			   	// Espacio para el pkt a tx
 	bool busy = FALSE;		 	// Flag para comprobar el estado de la radio
+	uint8_t rssi; // Se extrae en 8 bits sin signo
+	int16_t rssi2; // Se calcula en 16 bits con signo: la potencia recibida estará entre -10 y -90 dBm
 
 	// Obtiene el valor RSSI del paquete recibido
 	uint16_t getRssi(message_t *msg){
-		return (uint16_t) call CC2420Packet.getRssi(msg);
+
+	rssi=call CC2420Packet.getRssi(msg);
+	if(rssi>=128){
+ 		rssi2=rssi-45-256;
+	}
+	else{
+ 		rssi2=rssi-45;
+	}
+
+
+
+		return (uint16_t) rss2;
 	}
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
