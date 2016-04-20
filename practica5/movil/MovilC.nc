@@ -19,12 +19,13 @@ implementation {
 	bool busy = FALSE;    			// Flag para comprobar el estado de la radio
 
 	//variables nodos fijos
-	int16_t rssi2_n1;
-	int16_t rssi2_n2;
-	int16_t rssi2_n3;
+	int16_t distance_n1;
+	int16_t distance_n2;
+	int16_t distance_n3;
 
 	float a = -10.302;
 	float b = -1.678;
+
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
 	event void Boot.booted() {
@@ -101,7 +102,7 @@ implementation {
 			if (pktfijo_rx->ID_fijo == FIJO1_ID) {
 				//Nos ha llegado un paquete del nodo fijo 1
 
-				rssi2_n1=getDistance(pktfijo_rx->medidaRssi);
+				distance_n1=getDistance(pktfijo_rx->medidaRssi);
 
 				call Leds.led0On();   	// Led 0 On para fijo 1
 				call Leds.led1Off();	// Led 0 Off
@@ -110,7 +111,7 @@ implementation {
 			else if (pktfijo_rx->ID_fijo == FIJO2_ID) {
 				//Nos ha llegado un paquete del nodo fijo 1
 
-				rssi2_n2=getDistance(pktfijo_rx->medidaRssi);
+				distance_n2=getDistance(pktfijo_rx->medidaRssi);
 
 
 				call Leds.led0Off();   	// Led 0 Off
@@ -120,7 +121,7 @@ implementation {
 			else if (pktfijo_rx->ID_fijo == FIJO3_ID) {
 				//Nos ha llegado un paquete del nodo fijo 1
 
-				rssi2_n3=getDistance(pktfijo_rx->medidaRssi);
+				distance_n3=getDistance(pktfijo_rx->medidaRssi);
 
 
 				call Leds.led0Off();   	// Led 0 Off

@@ -12,7 +12,6 @@ module FijoC {
 	uses interface Timer<TMilli> as Timer0;
 }
 implementation {
-	uint16_t rssi;			   	// Almacena la medida de RSSI
 	message_t pkt;			   	// Espacio para el pkt a tx
 	bool busy = FALSE;		 	// Flag para comprobar el estado de la radio
 	uint8_t rssi; // Se extrae en 8 bits sin signo
