@@ -1,6 +1,6 @@
-#include "EsclavoHum.h"
+#include "Fijo.h"
 
-module EsclavoHumC {
+module FijoC {
 	uses interface Boot;
 	uses interface Leds;
 	uses interface CC2420Packet;
@@ -9,28 +9,16 @@ module EsclavoHumC {
 	uses interface AMSend;
 	uses interface Receive;
 	uses interface SplitControl as AMControl;
-	uses interface Read<uint16_t> as Humidity;
 	uses interface Timer<TMilli> as Timer0;
 }
 implementation {
 	uint16_t rssi;			   	// Almacena la medida de RSSI
-	uint16_t humedad;			// Almacena la medida de humedad
 	message_t pkt;			   	// Espacio para el pkt a tx
 	bool busy = FALSE;		 	// Flag para comprobar el estado de la radio
 
 	// Obtiene el valor RSSI del paquete recibido
 	uint16_t getRssi(message_t *msg){
 		return (uint16_t) call CC2420Packet.getRssi(msg);
-	}
-
-	// Mide la humedad. Almacena el valor en medida. Si hay error almacena 0xFFFF
-	event void Humidity.readDone(error_t result, uint16_t val) {
-		if(result == SUCCESS) {
-			humedad = -0.0000028*val*val+0.0405*val-4;
-		}
-		else {
-			humedad = 0xFFFF;
-		}
 	}
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
@@ -53,21 +41,20 @@ implementation {
 		// Si no está ocupado forma y envía el mensaje
 		if (!busy) {
 			// Reserva memoria para el paquete
-			EsclavoMsg* pktesclavo_tx = (EsclavoMsg*)(call Packet.getPayload(&pkt, sizeof(EsclavoMsg)));
+			FijoMsg* pktfijo_tx = (FijoMsg*)(call Packet.getPayload(&pkt, sizeof(FijoMsg)));
 
 			// Reserva errónea
-			if (pktesclavo_tx == NULL) {
+			if (pktfijo_tx == NULL) {
 				return 0;
 			}
 
 			// Forma el paquete a tx
-			pktesclavo_tx->ID_esclavo = ESCLAVO_HUM_ID;  	// Campo 1: ID esclavo
-			pktesclavo_tx->medidaRssi = rssi;      			// Campo 2: Medida RSSI
-			pktesclavo_tx->medida = humedad;    	 		// Campo 4: Valor de medida
+			pktfijo_tx->ID_fijo = FIJO1_ID;		  	// Campo 1: ID fijo 1
+			pktfijo_tx->medidaRssi = rssi;      		// Campo 2: Medida RSSI
 
 			// Envía
-			if (call AMSend.send(MAESTRO_ID, &pkt, sizeof(EsclavoMsg)) == SUCCESS) {
-				//						|-> Destino = Maestro
+			if (call AMSend.send(MOVIL_ID, &pkt, sizeof(FijoMsg)) == SUCCESS) {
+				//						|-> Destino = Móvil
 				busy = TRUE;	// Ocupado
 				call Leds.led0Off();   // Led 0 Off
 				call Leds.led1On();    // Led 1 ON cuando envío mi paquete
@@ -84,31 +71,30 @@ implementation {
 
 	// Comprueba la rx de un pkt
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
-		MaestroMsg* pktmaestro_rx = (MaestroMsg*)payload;	// Extrae el payload
+		MovilMsg* pktmovil_rx = (MovilMsg*)payload;		// Extrae el payload
 
-		// Si el paquete tiene la longitud correcta y es de mi maestro
-		if (len == sizeof(MaestroMsg) && pktmaestro_rx->ID_maestro == MAESTRO_ID) {
-			call Leds.led0On();    // Led 0 ON cuando me llega el paquete del Jefe
+		// Si el paquete tiene la longitud correcta y es del nodo móvil
+		if (len == sizeof(MovilMsg) && pktmovil_rx->ID_movil == MOVIL_ID) {
+			call Leds.led0On();    // Led 0 ON cuando me llega el paquete del móvil
 			call Leds.led1Off();   // Led 1 OFF
 
 			rssi = getRssi(msg);		// Calcula el RSSI
-			call Humidity.read();		// Mide la humedad
 
 			// Comprueba el slot que se le ha asignado
 			// 1º slot => Transmitir
-			if (pktmaestro_rx->first == ESCLAVO_HUM_ID) {
+			if (pktmovil_rx->first == FIJO1_ID) {
 				// No espera nada
 				call Timer0.startOneShot(1);
 			}
 			// 2º slot => Esperar 1 slot y Transmitir
-			else if (pktmaestro_rx->second == ESCLAVO_HUM_ID) {
+			else if (pktmovil_rx->second == FIJO1_ID) {
 				// Espera 1 slot = Periodo/nº slots
-				call Timer0.startOneShot(pktmaestro_rx->Tslot);
+				call Timer0.startOneShot(pktmovil_rx->Tslot);
 			}
 			// 3º slot => Esperar 2 slots y Transmitir
-			else if (pktmaestro_rx->third == ESCLAVO_HUM_ID) {
+			else if (pktmovil_rx->third == FIJO1_ID) {
 				// Espera 2 slots = 2*Periodo/nº slots
-				call Timer0.startOneShot(2*pktmaestro_rx->Tslot);
+				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
 			}
 			// En cualquiera de los casos cuando expira el temporizador dirige a "event void Timer0.fired()
 		}
