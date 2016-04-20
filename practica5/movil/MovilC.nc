@@ -23,8 +23,15 @@ implementation {
 	int16_t distance_n2;
 	int16_t distance_n3;
 
+	int16_t w_n1;
+	int16_t w_n2;
+	int16_t w_n3;
+
+
 	float a = -10.302;
 	float b = -1.678;
+
+	int16_t p = 1;
 
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
@@ -103,6 +110,7 @@ implementation {
 				//Nos ha llegado un paquete del nodo fijo 1
 
 				distance_n1=getDistance(pktfijo_rx->medidaRssi);
+				w_n1=1/(distance_n1^p);
 
 				call Leds.led0On();   	// Led 0 On para fijo 1
 				call Leds.led1Off();	// Led 0 Off
@@ -112,6 +120,7 @@ implementation {
 				//Nos ha llegado un paquete del nodo fijo 1
 
 				distance_n2=getDistance(pktfijo_rx->medidaRssi);
+				w_n2=1/(distance_n2^p);
 
 
 				call Leds.led0Off();   	// Led 0 Off
@@ -122,6 +131,7 @@ implementation {
 				//Nos ha llegado un paquete del nodo fijo 1
 
 				distance_n3=getDistance(pktfijo_rx->medidaRssi);
+				w_n3=1/(distance_n3^p);
 
 
 				call Leds.led0Off();   	// Led 0 Off
