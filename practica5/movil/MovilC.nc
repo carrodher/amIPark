@@ -109,8 +109,8 @@ implementation {
 	}
 
 	// Fórmula para obtener el peso
-	int16_t getWeigth(int16_t distance, int16_t p) {
-		return 1/(pow(distance,p));
+	int16_t getWeigth(int16_t distance, int16_t pvalue) {
+		return 1/(pow(distance,pvalue));
 	}
 
 	// Fórmula para calcular la localización
@@ -168,8 +168,8 @@ implementation {
 					LocationMsg* pktmovil_loc = (LocationMsg*)(call Packet.getPayload(&pkt, sizeof(LocationMsg)));
 
 					// Reserva errónea
-					if (pktmovil_tx == NULL) {
-						return;
+					if (pktmovil_loc == NULL) {
+						return 0;
 					}
 
 					/*** FORMA EL PAQUETE ***/
