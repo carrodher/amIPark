@@ -55,7 +55,7 @@ implementation {
 
 			// Reserva errónea
 			if (pktfijo_tx == NULL) {
-				return 0;
+				return;
 			}
 
 			// Forma el paquete a tx
