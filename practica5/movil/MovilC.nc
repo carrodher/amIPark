@@ -19,21 +19,27 @@ implementation {
 	message_t pkt;        			// Espacio para el pkt a tx
 	bool busy = FALSE;    			// Flag para comprobar el estado de la radio
 
-	//variables nodos fijos
+	// Distancia a nodos fijos Dij
 	int16_t distance_n1;
 	int16_t distance_n2;
 	int16_t distance_n3;
 
+	// Pesos wij
 	int16_t w_n1;
 	int16_t w_n2;
 	int16_t w_n3;
 
+	// Localización del nodo móvil
+	int16_t movilX;
+	int16_t movilY;
 
+	// RSSI en función de la distancia: RSSI(D) = a·log(D)+b
 	float a = -10.302;
 	float b = -1.678;
 
+	/* Exponente que modifica la influencia de la distancia en los pesos.
+	Valores más altos de p dan más importancia a los nodos fijos más cercanos */
 	int16_t p = 1;
-
 
 	// Se ejecuta al alimentar t-mote. Arranca la radio
 	event void Boot.booted() {
@@ -97,47 +103,89 @@ implementation {
 		}
 	}
 
-	uint8_t getDistance(int16_t rssiX){
-
+	// Fórmula para obtener la distancia a partir del RSSI
+	int16_t getDistance(int16_t rssiX){
 		return exp((rssiX-b)/a);
 	}
 
+	// Fórmula para obtener el peso
+	int16_t getWeigth(int16_t distance, int16_t p) {
+		return 1/(pow(distance,p));
+	}
+
+	// Fórmula para calcular la localización
+	int16_t calculateLocation(int16_t w1, int16_t w2, int16_t w3, int16_t c1, int16_t c2, int16_t c3) {
+		return (w1*c1+w2*c2+w3*c3)/(w1+w2+w3);
+	}
+
+	// Recibe un mensaje de cualquiera de los nodos fijos
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
 		if (len == sizeof(FijoMsg)) {
-			FijoMsg* pktfijo_rx = (FijoMsg*)payload;   // Extrae el payload
+			FijoMsg* pktfijo_rx = (FijoMsg*)payload;		// Extrae el payload
 
 			// Determina el emisor del mensaje recibido
-			if (pktfijo_rx->ID_fijo == FIJO1_ID) {
-				//Nos ha llegado un paquete del nodo fijo 1
-
-				distance_n1=getDistance(pktfijo_rx->medidaRssi);
-				w_n1=1/(pow(distance_n1,p));
-
+			if (pktfijo_rx->ID_fijo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
+				// Enciende los leds para notificar la llegada de un paquete
 				call Leds.led0On();   	// Led 0 On para fijo 1
 				call Leds.led1Off();	// Led 0 Off
 				call Leds.led2Off();  	// Led 0 Off
+
+				// Calcula la distancia al nodo 1 en base al RSSI
+				distance_n1 = getDistance(pktfijo_rx->medidaRssi);
+				// Calcula el peso del nodo 1
+				w_n1 = getWeigth(distance_n1,p);
 			}
-			else if (pktfijo_rx->ID_fijo == FIJO2_ID) {
-				//Nos ha llegado un paquete del nodo fijo 1
-
-				distance_n2=getDistance(pktfijo_rx->medidaRssi);
-				w_n2=1/(pow(distance_n2,p));
-
-
+			else if (pktfijo_rx->ID_fijo == FIJO2_ID) {		//Nos ha llegado un paquete del nodo fijo 2
+				// Enciende los leds para notificar la llegada de un paquete
 				call Leds.led0Off();   	// Led 0 Off
 				call Leds.led1On();    	// Led 1 On para fijo 2
 				call Leds.led2Off();	// Led 2 Off
+
+				// Calcula la distancia al nodo 2 en base al RSSI
+				distance_n2 = getDistance(pktfijo_rx->medidaRssi);
+				// Calcula el peso del nodo 2
+				w_n2 = getWeigth(distance_n2,p);
 			}
-			else if (pktfijo_rx->ID_fijo == FIJO3_ID) {
-				//Nos ha llegado un paquete del nodo fijo 1
-
-				distance_n3=getDistance(pktfijo_rx->medidaRssi);
-				w_n3=1/(pow(distance_n3,p));
-
-
+			else if (pktfijo_rx->ID_fijo == FIJO3_ID) {		//Nos ha llegado un paquete del nodo fijo 3
+				// Enciende los leds para notificar la llegada de un paquete
 				call Leds.led0Off();   	// Led 0 Off
 				call Leds.led1Off();   	// Led 1 Off
-				call Leds.led2On();    	// Led 2 On para fijo 2
+				call Leds.led2On();    	// Led 2 On para fijo 3
+
+				// Calcula la distancia al nodo 2 en base al RSSI
+				distance_n3 = getDistance(pktfijo_rx->medidaRssi);
+				// Calcula el peso del nodo 3
+				w_n3 = getWeigth(distance_n3,p);
+
+				/* Llegados a este punto ya tenemos TODOS los datos de los nodos fijos,
+				así que podemos calcular la localizacón del nodo móvil */
+				movilX = calculateLocation(w_n1,w_n2,w_n3,COOR1_X,COOR2_X,COOR3_X);
+				movilY = calculateLocation(w_n1,w_n2,w_n3,COOR1_Y,COOR2_Y,COOR3_Y);
+
+				// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
+				if (!busy) {
+					// Reserva memoria para el paquete
+					LocationMsg* pktmovil_loc = (LocationMsg*)(call Packet.getPayload(&pkt, sizeof(LocationMsg)));
+
+					// Reserva errónea
+					if (pktmovil_tx == NULL) {
+						return;
+					}
+
+					/*** FORMA EL PAQUETE ***/
+					// Campo 1: ID_movil
+					pktmovil_loc->ID_movil = MOVIL_ID;
+					// Campo 2: Coordenada X
+					pktmovil_loc->coorX = movilX;
+					// Campo 3: Coordenada Y
+					pktmovil_loc->coorY = movilY;
+
+					// Envía
+					if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LocationMsg)) == SUCCESS) {
+						//						|-> Destino = Difusión
+						busy = TRUE;	// Ocupado
+					}
+				}
 			}
 		}
 		return msg;
