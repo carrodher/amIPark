@@ -23,7 +23,7 @@ typedef nx_struct MovilMsg {
 	nx_uint16_t first;			// 1º slot para este fijo
 	nx_uint16_t second;			// 2º slot para este fijo
 	nx_uint16_t third;			// 3º slot para este fijo
-	nx_uint16_t fourth;			// 3º slot para el móvil
+	nx_uint16_t fourth;			// 4º slot para el móvil
 } MovilMsg;
 
 typedef nx_struct FijoMsg {
