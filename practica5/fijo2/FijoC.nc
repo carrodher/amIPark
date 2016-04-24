@@ -20,11 +20,12 @@ implementation {
 	// Obtiene el valor RSSI del paquete recibido
 	uint16_t getRssi(message_t *msg){
 
-		rssi=call CC2420Packet.getRssi(msg);
-		if(rssi >= 128){
+		rssi = call CC2420Packet.getRssi(msg);
+
+		if(rssi >= 128) {
 			rssi2 = rssi-45-256;
 		}
-		else{
+		else {
 			rssi2 = rssi-45;
 		}
 		return (uint16_t) rssi2;
@@ -65,7 +66,7 @@ implementation {
 
 			// Envía
 			if (call AMSend.send(MOVIL_ID, &pkt, sizeof(FijoMsg)) == SUCCESS) {
-				//						|-> Destino = Móvil
+				//					|-> Destino = Móvil
 				busy = TRUE;	// Ocupado
 				call Leds.led0Off();   // Led 0 Off
 				call Leds.led1On();    // Led 1 ON cuando envío mi paquete
