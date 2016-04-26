@@ -104,12 +104,12 @@ implementation {
 	}
 
 	// Fórmula para obtener la distancia a partir del RSSI
-	int16_t getDistance(float rssiX){
+	float getDistance(float rssiX){
 		return expf((rssiX-b)/a);
 	}
 
 	// Fórmula para obtener el peso
-	int16_t getWeigth(int16_t distance, float pvalue) {
+	float getWeigth(float distance, float pvalue) {
 		return 1/(powf(distance,pvalue));
 	}
 
@@ -159,8 +159,8 @@ implementation {
 
 				/* Llegados a este punto ya tenemos TODOS los datos de los nodos fijos,
 				así que podemos calcular la localizacón del nodo móvil */
-				movilX = calculateLocation(w_n1,w_n2,w_n3,COOR1_X,COOR2_X,COOR3_X);
-				movilY = calculateLocation(w_n1,w_n2,w_n3,COOR1_Y,COOR2_Y,COOR3_Y);
+				//movilX = calculateLocation(w_n1,w_n2,w_n3,COOR1_X,COOR2_X,COOR3_X);
+				//movilY = calculateLocation(w_n1,w_n2,w_n3,COOR1_Y,COOR2_Y,COOR3_Y);
 
 				// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
 				if (!busy) {
@@ -178,7 +178,7 @@ implementation {
 					// Campo 2: Coordenada X
 					pktmovil_loc->coorX = movilX;
 					// Campo 3: Coordenada Y
-					pktmovil_loc->coorY = movilY;
+					//pktmovil_loc->coorY = movilY;
 
 					// Envía
 					if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LocationMsg)) == SUCCESS) {
