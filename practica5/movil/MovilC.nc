@@ -20,9 +20,9 @@ implementation {
 	bool busy = FALSE;    			// Flag para comprobar el estado de la radio
 
 	// Distancia a nodos fijos Dij
-	int16_t distance_n1;
-	int16_t distance_n2;
-	int16_t distance_n3;
+	float distance_n1;
+	float distance_n2;
+	float distance_n3;
 
 	// Pesos wij
 	int16_t w_n1;
@@ -104,13 +104,13 @@ implementation {
 	}
 
 	// Fórmula para obtener la distancia a partir del RSSI
-	int16_t getDistance(int16_t rssiX){
-		return exp((rssiX-b)/a);
+	int16_t getDistance(float rssiX){
+		return expf((rssiX-b)/a);
 	}
 
 	// Fórmula para obtener el peso
-	int16_t getWeigth(int16_t distance, int16_t pvalue) {
-		return 1/(pow(distance,pvalue));
+	int16_t getWeigth(int16_t distance, float pvalue) {
+		return 1/(powf(distance,pvalue));
 	}
 
 	// Fórmula para calcular la localización
