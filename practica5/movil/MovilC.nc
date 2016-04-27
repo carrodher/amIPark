@@ -25,9 +25,9 @@ implementation {
 	float distance_n3;
 
 	// Pesos wij
-	int16_t w_n1;
-	int16_t w_n2;
-	int16_t w_n3;
+	float w_n1;
+	float w_n2;
+	float w_n3;
 
 	// Localización del nodo móvil
 	int16_t movilX;
@@ -114,7 +114,7 @@ implementation {
 	}
 
 	// Fórmula para calcular la localización
-	int16_t calculateLocation(int16_t w1, int16_t w2, int16_t w3, int16_t c1, int16_t c2, int16_t c3) {
+	int16_t calculateLocation(float w1, float w2, float w3, int16_t c1, int16_t c2, int16_t c3) {
 		return (w1*c1+w2*c2+w3*c3)/(w1+w2+w3);
 	}
 
@@ -159,8 +159,8 @@ implementation {
 
 				/* Llegados a este punto ya tenemos TODOS los datos de los nodos fijos,
 				así que podemos calcular la localizacón del nodo móvil */
-				//movilX = calculateLocation(w_n1,w_n2,w_n3,COOR1_X,COOR2_X,COOR3_X);
-				//movilY = calculateLocation(w_n1,w_n2,w_n3,COOR1_Y,COOR2_Y,COOR3_Y);
+				movilX = calculateLocation(w_n1,w_n2,w_n3,COOR1_X,COOR2_X,COOR3_X);
+				movilY = calculateLocation(w_n1,w_n2,w_n3,COOR1_Y,COOR2_Y,COOR3_Y);
 
 				// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
 				if (!busy) {
@@ -178,7 +178,7 @@ implementation {
 					// Campo 2: Coordenada X
 					pktmovil_loc->coorX = movilX;
 					// Campo 3: Coordenada Y
-					//pktmovil_loc->coorY = movilY;
+					pktmovil_loc->coorY = movilY;
 
 					// Envía
 					if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LocationMsg)) == SUCCESS) {
