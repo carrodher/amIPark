@@ -31,6 +31,6 @@ typedef nx_struct FijoMsg {
 	nx_uint16_t medidaRssi;		// Valor de la medida RSSI
 	nx_uint16_t x;				// Coordenada X
 	nx_uint16_t y;				// Coordenada Y
-} FijoMsg;
+} FijoMsg;q
 
 #endif

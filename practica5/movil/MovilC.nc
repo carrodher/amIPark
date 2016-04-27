@@ -105,7 +105,7 @@ implementation {
 
 	// Fórmula para obtener la distancia a partir del RSSI
 	float getDistance(float rssiX){
-		return expf((rssiX-b)/a);
+		return powf(10,((rssiX-b)/a));
 	}
 
 	// Fórmula para obtener el peso
