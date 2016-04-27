@@ -35,8 +35,9 @@ typedef nx_struct FijoMsg {
 
 typedef nx_struct LocationMsg {
 	nx_uint16_t ID_movil;		// ID movil = ID origen
-	nx_int16_t coorX;			// Coordenada X
-	nx_int16_t coorY;			// Coordenada Y
+	nx_uint16_t coorX;			// Coordenada X
+	nx_uint16_t coorY;			// Coordenada Y
+	
 } LocationMsg;
 
 #endif
