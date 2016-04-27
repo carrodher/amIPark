@@ -114,7 +114,7 @@ implementation {
 	}
 
 	// Fórmula para calcular la localización
-	int16_t calculateLocation(float w1, float w2, float w3, int16_t c1, int16_t c2, int16_t c3) {
+	float calculateLocation(float w1, float w2, float w3, int16_t c1, int16_t c2, int16_t c3) {
 		return (w1*c1+w2*c2+w3*c3)/(w1+w2+w3);
 	}
 
