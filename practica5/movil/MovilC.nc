@@ -30,8 +30,8 @@ implementation {
 	float w_n3;
 
 	// Localización del nodo móvil
-	int16_t movilX;
-	int16_t movilY;
+	uint16_t movilX;
+	uint16_t movilY;
 
 	// RSSI en función de la distancia: RSSI(D) = a·log(D)+b
 	float a = -10.302;
@@ -176,9 +176,9 @@ implementation {
 					// Campo 1: ID_movil
 					pktmovil_loc->ID_movil = MOVIL_ID;
 					// Campo 2: Coordenada X
-					pktmovil_loc->coorX = movilX;
+					pktmovil_loc->coorX = movilX*100;
 					// Campo 3: Coordenada Y
-					pktmovil_loc->coorY = movilY;
+					pktmovil_loc->coorY = movilY*100;
 
 					// Envía
 					if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LocationMsg)) == SUCCESS) {
