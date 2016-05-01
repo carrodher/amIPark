@@ -103,18 +103,26 @@ implementation {
 		}
 	}
 
-	// Fórmula para obtener la distancia a partir del RSSI
+	// Fórmula para obtener la distancia a partir del RSSI, se llama una vez por cada nodo fijo
 	float getDistance(float rssiX){
+		/* Fórmula:
+			RSSI(D) = a·log(D) + b
+			D = 10^((RSSI-b)/a) */
 		return powf(10,((rssiX-b)/a));
 	}
 
-	// Fórmula para obtener el peso
+	// Fórmula para obtener el peso, se llama una vez por cada nodo fijo
 	float getWeigth(float distance, float pvalue) {
+		/* Fórmula:
+			w = 1/(D^p) */
 		return 1/(powf(distance,pvalue));
 	}
 
-	// Fórmula para calcular la localización
+	// Fórmula para calcular la localización, se llama 2 veces, una para X y otra para Y
 	float calculateLocation(float w1, float w2, float w3, int16_t c1, int16_t c2, int16_t c3) {
+		/* Fórmula:
+			X = (w1·x1 + w2·x2 + w3·x3)/(w1 + w2 + w3)
+			Y = (w1·y1 + w2·y2 + w3·y3)/(w1 + w2 + w3) */
 		return (w1*c1+w2*c2+w3*c3)/(w1+w2+w3);
 	}
 
@@ -158,8 +166,10 @@ implementation {
 				w_n3 = getWeigth(distance_n3,p);
 
 				/* Llegados a este punto ya tenemos TODOS los datos de los nodos fijos,
-				así que podemos calcular la localizacón del nodo móvil */
+				así que podemos calcular la localizacón del nodo móvil y enviar el resultado*/
+				// Calculamos la coordenada X del nodo móvil
 				movilX = calculateLocation(w_n1,w_n2,w_n3,COOR1_X,COOR2_X,COOR3_X);
+				// Calculamos la coordenada Y del nodo móvil
 				movilY = calculateLocation(w_n1,w_n2,w_n3,COOR1_Y,COOR2_Y,COOR3_Y);
 
 				// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
