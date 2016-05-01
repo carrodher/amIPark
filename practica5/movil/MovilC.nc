@@ -96,6 +96,29 @@ implementation {
 		}
 	}
 
+	// Enciende los leds según el nodo emisor
+	void turnOnLeds(int16_t nodo) {
+		// Determina el emisor del mensaje recibido
+		if (nodo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
+			// Enciende los leds para notificar la llegada de un paquete
+			call Leds.led0On();   	// Led 0 On para fijo 1
+			call Leds.led1Off();	// Led 0 Off
+			call Leds.led2Off();  	// Led 0 Off
+		}
+		else if (nodo == FIJO2_ID) {		//Nos ha llegado un paquete del nodo fijo 2
+			// Enciende los leds para notificar la llegada de un paquete
+			call Leds.led0Off();   	// Led 0 Off
+			call Leds.led1On();    	// Led 1 On para fijo 2
+			call Leds.led2Off();	// Led 2 Off
+		}
+		else if (nodo == FIJO3_ID) {
+			// Enciende los leds para notificar la llegada de un paquete
+			call Leds.led0Off();   	// Led 0 Off
+			call Leds.led1Off();   	// Led 1 Off
+			call Leds.led2On();    	// Led 2 On para fijo 3
+		}
+	}
+
 	// Comprueba la tx del pkt y marca como libre si ha terminado
 	event void AMSend.sendDone(message_t* msg, error_t err) {
 		if (&pkt == msg) {
@@ -134,9 +157,7 @@ implementation {
 			// Determina el emisor del mensaje recibido
 			if (pktfijo_rx->ID_fijo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
 				// Enciende los leds para notificar la llegada de un paquete
-				call Leds.led0On();   	// Led 0 On para fijo 1
-				call Leds.led1Off();	// Led 0 Off
-				call Leds.led2Off();  	// Led 0 Off
+				turnOnLeds(pktfijo_rx->ID_fijo);
 
 				// Calcula la distancia al nodo 1 en base al RSSI
 				distance_n1 = getDistance(pktfijo_rx->medidaRssi);
@@ -145,9 +166,7 @@ implementation {
 			}
 			else if (pktfijo_rx->ID_fijo == FIJO2_ID) {		//Nos ha llegado un paquete del nodo fijo 2
 				// Enciende los leds para notificar la llegada de un paquete
-				call Leds.led0Off();   	// Led 0 Off
-				call Leds.led1On();    	// Led 1 On para fijo 2
-				call Leds.led2Off();	// Led 2 Off
+				turnOnLeds(pktfijo_rx->ID_fijo);
 
 				// Calcula la distancia al nodo 2 en base al RSSI
 				distance_n2 = getDistance(pktfijo_rx->medidaRssi);
@@ -156,11 +175,9 @@ implementation {
 			}
 			else if (pktfijo_rx->ID_fijo == FIJO3_ID) {		//Nos ha llegado un paquete del nodo fijo 3
 				// Enciende los leds para notificar la llegada de un paquete
-				call Leds.led0Off();   	// Led 0 Off
-				call Leds.led1Off();   	// Led 1 Off
-				call Leds.led2On();    	// Led 2 On para fijo 3
+				turnOnLeds(pktfijo_rx->ID_fijo);
 
-				// Calcula la distancia al nodo 2 en base al RSSI
+				// Calcula la distancia al nodo 3 en base al RSSI
 				distance_n3 = getDistance(pktfijo_rx->medidaRssi);
 				// Calcula el peso del nodo 3
 				w_n3 = getWeigth(distance_n3,p);
