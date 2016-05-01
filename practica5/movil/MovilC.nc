@@ -176,11 +176,22 @@ implementation {
 					// Campo 1: ID_movil
 					pktmovil_loc->ID_movil = MOVIL_ID;
 					// Campo 2: Coordenada X
-					//pktmovil_loc->coorX = movilX*100;
-					pktmovil_loc->coorX = distance_n2*100;	
+					pktmovil_loc->coorX = movilX*100;
 					// Campo 3: Coordenada Y
-					//pktmovil_loc->coorY = movilY*100;
-					pktmovil_loc->coorY = distance_n3*100;
+					pktmovil_loc->coorY = movilY*100;
+
+
+					/* ¡¡ __TEST__ !!
+						Para comprobar los pasos intermedios: comentar arriba,
+						descomentar lo siguiente y ver en la Base Station: */
+					// 	1.- Distancia
+					//pktmovil_loc->ID_movil = distance_n1*100;
+					//pktmovil_loc->coorX = distance_n2*100;
+					//pktmovil_loc->coorY = distance_n3*100;
+					// 	2.- Pesos
+					//pktmovil_loc->ID_movil = w_n1;
+					//pktmovil_loc->coorX = w_n2;
+					//pktmovil_loc->coorY = w_n3;
 
 					// Envía
 					if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LocationMsg)) == SUCCESS) {
