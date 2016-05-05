@@ -8,13 +8,7 @@ enum {
 	FIJO1_ID   			= 131,
 	FIJO2_ID  			= 132,
 	FIJO3_ID   			= 133,
-	SLOTS				= 5,
-	COOR1_X				= 0,
-	COOR1_Y				= 0,
-	COOR2_X				= 2,
-	COOR2_Y				= 0,
-	COOR3_X				= 1,
-	COOR3_Y				= 1
+	SLOTS				= 5
 };
 
 typedef nx_struct MovilMsg {
@@ -37,7 +31,7 @@ typedef nx_struct LocationMsg {
 	nx_uint16_t ID_movil;		// ID movil = ID origen
 	nx_uint16_t coorX;			// Coordenada X
 	nx_uint16_t coorY;			// Coordenada Y
-	
+
 } LocationMsg;
 
 #endif

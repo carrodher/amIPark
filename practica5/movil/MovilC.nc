@@ -12,12 +12,21 @@ module MovilC {
 	uses interface SplitControl as AMControl;
 }
 implementation {
+	int16_t rssi;					// RSSI recibido
 	uint16_t first = FIJO1_ID;		// 1º slot (Nodo fijo 1)
 	uint16_t second = FIJO2_ID;		// 2º slot (Nodo fijo 2)
 	uint16_t third = FIJO3_ID;		// 3º slot (Nodo fijo 3)
 	uint16_t fourth = MOVIL_ID;		// 4º slot (Nodo móvil)
 	message_t pkt;        			// Espacio para el pkt a tx
 	bool busy = FALSE;    			// Flag para comprobar el estado de la radio
+
+	// Coordenadas de los nodos fijos
+	int16_t coor1_x = 0;
+	int16_t coor1_y = 0;
+	int16_t coor2_x = 2;
+	int16_t coor2_y = 0;
+	int16_t coor3_x = 1;
+	int16_t coor3_y = 1;
 
 	// Distancia a nodos fijos Dij
 	float distance_n1;
@@ -30,8 +39,8 @@ implementation {
 	float w_n3;
 
 	// Localización del nodo móvil
-	float movilX;
-	float movilY;
+	int16_t movilX = 0;
+	int16_t movilY = 0;
 
 	// RSSI en función de la distancia: RSSI(D) = a·log(D)+b
 
@@ -141,11 +150,11 @@ implementation {
 	}
 
 	// Fórmula para calcular la localización, se llama 2 veces, una para X y otra para Y
-	float calculateLocation(float w1, float w2, float w3, int16_t c1, int16_t c2, int16_t c3) {
+	int16_t calculateLocation(float w1, float w2, float w3, int16_t c1, int16_t c2, int16_t c3) {
 		/* Fórmula:
 			X = (w1·x1 + w2·x2 + w3·x3)/(w1 + w2 + w3)
 			Y = (w1·y1 + w2·y2 + w3·y3)/(w1 + w2 + w3) */
-		return (w1*c1+w2*c2+w3*c3)/(w1+w2+w3);
+		return (w2*c2+w2*c2+w3*c3)/(w2+w2+w3);
 	}
 
 	// Recibe un mensaje de cualquiera de los nodos fijos
@@ -158,8 +167,9 @@ implementation {
 				// Enciende los leds para notificar la llegada de un paquete
 				turnOnLeds(pktfijo_rx->ID_fijo);
 
+				rssi = pktfijo_rx->medidaRssi;
 				// Calcula la distancia al nodo 1 en base al RSSI
-				distance_n1 = getDistance(pktfijo_rx->medidaRssi);
+				distance_n1 = getDistance(rssi);
 				// Calcula el peso del nodo 1
 				w_n1 = getWeigth(distance_n1,p);
 			}
@@ -167,8 +177,9 @@ implementation {
 				// Enciende los leds para notificar la llegada de un paquete
 				turnOnLeds(pktfijo_rx->ID_fijo);
 
+				rssi = pktfijo_rx->medidaRssi;
 				// Calcula la distancia al nodo 2 en base al RSSI
-				distance_n2 = getDistance(pktfijo_rx->medidaRssi);
+				distance_n2 = getDistance(rssi);
 				// Calcula el peso del nodo 2
 				w_n2 = getWeigth(distance_n2,p);
 			}
@@ -176,17 +187,18 @@ implementation {
 				// Enciende los leds para notificar la llegada de un paquete
 				turnOnLeds(pktfijo_rx->ID_fijo);
 
+				rssi = pktfijo_rx->medidaRssi;
 				// Calcula la distancia al nodo 3 en base al RSSI
-				distance_n3 = getDistance(pktfijo_rx->medidaRssi);
+				distance_n3 = getDistance(rssi);
 				// Calcula el peso del nodo 3
 				w_n3 = getWeigth(distance_n3,p);
 
 				/* Llegados a este punto ya tenemos TODOS los datos de los nodos fijos,
 				así que podemos calcular la localizacón del nodo móvil y enviar el resultado*/
 				// Calculamos la coordenada X del nodo móvil
-				movilX = calculateLocation(w_n1,w_n2,w_n3,COOR1_X,COOR2_X,COOR3_X);
+				movilX = calculateLocation(w_n1,w_n2,w_n3,coor1_x,coor2_x,coor3_x);
 				// Calculamos la coordenada Y del nodo móvil
-				movilY = calculateLocation(w_n1,w_n2,w_n3,COOR1_Y,COOR2_Y,COOR3_Y);
+				movilY = calculateLocation(w_n1,w_n2,w_n3,coor1_y,coor2_y,coor3_y);
 
 				// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
 				if (!busy) {
@@ -224,6 +236,21 @@ implementation {
 						//						|-> Destino = Difusión
 						busy = TRUE;	// Ocupado
 					}
+				}
+				// Si está ocupado mandamos un mensaje reconocido para saberlo
+				else {
+					// Reserva memoria para el paquete
+					LocationMsg* pktmovil_loc = (LocationMsg*)(call Packet.getPayload(&pkt, sizeof(LocationMsg)));
+
+					// Reserva errónea
+					if (pktmovil_loc == NULL) {
+						return 0;
+					}
+
+					/*** FORMA EL PAQUETE ***/
+					pktmovil_loc->ID_movil = 0;
+					pktmovil_loc->coorX = 0;
+					pktmovil_loc->coorY = 0;
 				}
 			}
 		}
