@@ -1,4 +1,5 @@
 #include "Movil.h"
+#include <Timer.h>
 #include <math.h>
 
 module MovilC {
@@ -11,22 +12,23 @@ module MovilC {
 	uses interface Receive;
 	uses interface SplitControl as AMControl;
 }
+
 implementation {
 	int16_t rssi = 0;					// Rssi recibido
-	uint16_t first = FIJO1_ID;	// 1º slot (defecto: Temperatura)
-	uint16_t second = FIJO2_ID;	// 2º slot (defecto: Humedad)
-	uint16_t third = FIJO3_ID;	// 3º slot (defecto: Luminosidad)
-	uint16_t fourth = MOVIL_ID; 		// 4º slot (Siempre Maestro)
+	uint16_t first = FIJO1_ID;			// 1º slot (id fijo1)
+	uint16_t second = FIJO2_ID;			// 2º slot (id fijo2)
+	uint16_t third = FIJO3_ID;			// 3º slot (id fijo3)
+	uint16_t fourth = MOVIL_ID; 		// 4º slot (id movil)
 	message_t pkt;        				// Espacio para el pkt a tx
 	bool busy = FALSE;    				// Flag para comprobar el estado de la radio
 
 	// Coordenadas de los nodos fijos
-	uint16_t coor1_x = 0;
-	uint16_t coor1_y = 0;
-	uint16_t coor2_x = 2;
-	uint16_t coor2_y = 0;
-	uint16_t coor3_x = 1;
-	uint16_t coor3_y = 1;
+	int16_t coor1_x = 0;
+	int16_t coor1_y = 0;
+	int16_t coor2_x = 2;
+	int16_t coor2_y = 0;
+	int16_t coor3_x = 1;
+	int16_t coor3_y = 1;
 
 	// Distancia a nodos fijos Dij
 	float distance_n1 = 0;
@@ -39,8 +41,8 @@ implementation {
 	float w_n3 = 0;
 
 	// Localización del nodo móvil
-	uint16_t movilX = 0;
-	uint16_t movilY = 0;
+	int16_t movilX = 0;
+	int16_t movilY = 0;
 
     // RSSI en función de la distancia: RSSI(D) = a·log(D)+b
 	
@@ -138,7 +140,7 @@ implementation {
 		/* Fórmula:
 			RSSI(D) = a·log(D) + b
 			D = 10^((RSSI-b)/a) */
-		return powf(10,((rssiX+1.678)/(-10.302)));
+		return 100*powf(10,((rssiX+1.678)/(-10.302)));
 	}
 
 
@@ -219,9 +221,9 @@ implementation {
 					// Campo 1: ID_movil
 					pktmovil_loc->ID_movil = MOVIL_ID;
 					// Campo 2: Coordenada X
-					pktmovil_loc->coorX = movilX*100;
+					//pktmovil_loc->coorX = movilX;
 					// Campo 3: Coordenada Y
-					pktmovil_loc->coorY = movilY*100;
+					//pktmovil_loc->coorY = movilY;
 
 
 					/* ¡¡ __TEST__ !!
@@ -229,11 +231,11 @@ implementation {
 						descomentar lo siguiente y ver en la Base Station: */
 					// 	1.- Distancia
 					//pktmovil_loc->ID_movil = distance_n1*100;
-					//pktmovil_loc->coorX = distance_n2*100;
+					pktmovil_loc->coorX = distance_n2*100;
 					//pktmovil_loc->coorY = distance_n3*100;
 					// 	2.- Pesos
 					//pktmovil_loc->ID_movil = w_n1;
-					//pktmovil_loc->coorX = w_n2;
+					pktmovil_loc->coorY = w_n2;
 					//pktmovil_loc->coorY = w_n3;
 
 					// Envía
