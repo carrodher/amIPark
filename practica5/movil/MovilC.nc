@@ -34,8 +34,7 @@ implementation {
 	float movilY;
 
 	// RSSI en función de la distancia: RSSI(D) = a·log(D)+b
-	float a = -10.302;
-	float b = -1.678;
+
 
 	/* Exponente que modifica la influencia de la distancia en los pesos.
 	Valores más altos de p dan más importancia a los nodos fijos más cercanos */
@@ -131,7 +130,7 @@ implementation {
 		/* Fórmula:
 			RSSI(D) = a·log(D) + b
 			D = 10^((RSSI-b)/a) */
-		return powf(10,((rssiX-b)/a));
+		return powf(10,((rssiX+1.678)/(-10.302)));
 	}
 
 	// Fórmula para obtener el peso, se llama una vez por cada nodo fijo
