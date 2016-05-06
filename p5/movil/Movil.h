@@ -31,6 +31,9 @@ typedef nx_struct LocationMsg {
 	nx_uint16_t ID_movil;		// ID movil = ID origen
 	nx_uint16_t coorX;			// Valor de la coordenada X del movil calculada
 	nx_uint16_t coorY;			// Valor de la coordenada Y del movil calculada
+  nx_uint16_t distance1;
+  nx_uint16_t distance2;
+  nx_uint16_t distance3;
 } LocationMsg;
 
 #endif

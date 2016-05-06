@@ -1,5 +1,4 @@
 #include "Movil.h"
-#include <Timer.h>
 #include <math.h>
 
 module MovilC {
@@ -12,23 +11,22 @@ module MovilC {
 	uses interface Receive;
 	uses interface SplitControl as AMControl;
 }
-
 implementation {
 	int16_t rssi = 0;					// Rssi recibido
-	uint16_t first = FIJO1_ID;			// 1º slot (id fijo1)
-	uint16_t second = FIJO2_ID;			// 2º slot (id fijo2)
-	uint16_t third = FIJO3_ID;			// 3º slot (id fijo3)
-	uint16_t fourth = MOVIL_ID; 		// 4º slot (id movil)
+	uint16_t first = FIJO1_ID;	// 1º slot (defecto: Temperatura)
+	uint16_t second = FIJO2_ID;	// 2º slot (defecto: Humedad)
+	uint16_t third = FIJO3_ID;	// 3º slot (defecto: Luminosidad)
+	uint16_t fourth = MOVIL_ID; 		// 4º slot (Siempre Maestro)
 	message_t pkt;        				// Espacio para el pkt a tx
 	bool busy = FALSE;    				// Flag para comprobar el estado de la radio
 
 	// Coordenadas de los nodos fijos
-	int16_t coor1_x = 0;
-	int16_t coor1_y = 0;
-	int16_t coor2_x = 2;
-	int16_t coor2_y = 0;
-	int16_t coor3_x = 1;
-	int16_t coor3_y = 1;
+	uint16_t coor1_x = 0;
+	uint16_t coor1_y = 0;
+	uint16_t coor2_x = 200;
+	uint16_t coor2_y = 0;
+	uint16_t coor3_x = 100;
+	uint16_t coor3_y = 100;
 
 	// Distancia a nodos fijos Dij
 	float distance_n1 = 0;
@@ -41,11 +39,17 @@ implementation {
 	float w_n3 = 0;
 
 	// Localización del nodo móvil
-	int16_t movilX = 0;
-	int16_t movilY = 0;
+	uint16_t movilX = 0;
+	uint16_t movilY = 0;
 
-    // RSSI en función de la distancia: RSSI(D) = a·log(D)+b
+  // Constantes para calculo de la distancia
+  float a = -21.593;
+  float b = -50.093;
+
+
+  /* RSSI en función de la distancia: RSSI(D) = a·log(D)+b */
 	
+
 	/* Exponente que modifica la influencia de la distancia en los pesos.
 	Valores más altos de p dan más importancia a los nodos fijos más cercanos */
 	int p = 1;
@@ -137,10 +141,13 @@ implementation {
 
 		// Fórmula para obtener la distancia a partir del RSSI, se llama una vez por cada nodo fijo
 	float getDistance(int16_t rssiX){
+    
+    // Convertir RSSI a float
+    float rssi_float = (float) rssiX;
 		/* Fórmula:
 			RSSI(D) = a·log(D) + b
 			D = 10^((RSSI-b)/a) */
-		return 100*powf(10,((rssiX+1.678)/(-10.302)));
+		return 100 * powf(10, (rssi_float-b)/a );
 	}
 
 
@@ -148,7 +155,7 @@ implementation {
 	float getWeigth(float distance, int pvalue) {
 		/* Fórmula:
 			w = 1/(D^p) */
-		return 1/(powf(distance,pvalue)*100);
+		return 1/(powf(distance,pvalue));
 	}
 
 	int16_t calculateLocation(float w1, float w2, float w3, uint16_t c1, uint16_t c2, uint16_t c3) {
@@ -221,9 +228,13 @@ implementation {
 					// Campo 1: ID_movil
 					pktmovil_loc->ID_movil = MOVIL_ID;
 					// Campo 2: Coordenada X
-					//pktmovil_loc->coorX = movilX;
+					pktmovil_loc->coorX = movilX;
 					// Campo 3: Coordenada Y
-					//pktmovil_loc->coorY = movilY;
+					pktmovil_loc->coorY = movilY;
+
+          pktmovil_loc->distance1 = (uint16_t) distance_n1;
+          pktmovil_loc->distance2 = (uint16_t) distance_n2;
+          pktmovil_loc->distance3 = (uint16_t) distance_n3;
 
 
 					/* ¡¡ __TEST__ !!
@@ -231,11 +242,11 @@ implementation {
 						descomentar lo siguiente y ver en la Base Station: */
 					// 	1.- Distancia
 					//pktmovil_loc->ID_movil = distance_n1*100;
-					pktmovil_loc->coorX = distance_n2*100;
+					//pktmovil_loc->coorX = distance_n2*100;
 					//pktmovil_loc->coorY = distance_n3*100;
 					// 	2.- Pesos
 					//pktmovil_loc->ID_movil = w_n1;
-					pktmovil_loc->coorY = w_n2;
+					//pktmovil_loc->coorX = w_n2;
 					//pktmovil_loc->coorY = w_n3;
 
 					// Envía
