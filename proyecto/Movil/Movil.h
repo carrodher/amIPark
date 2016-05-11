@@ -8,7 +8,11 @@ enum {
 	FIJO1_ID    		= 131,
 	FIJO2_ID    		= 132,
 	FIJO3_ID    		= 133,
-	SLOTS				= 5
+	SLOTS				= 5,
+	ORDEN_INICIAL 		= 0,
+	LIBRE 				= 0,
+	RESERVADO 			= 1,
+	OCUPADO 			=2
 };
 
 typedef nx_struct MovilMsg {

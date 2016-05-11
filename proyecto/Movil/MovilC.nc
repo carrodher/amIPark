@@ -78,6 +78,27 @@ implementation {
 		// Si no está ocupado forma y envía el mensaje
 		if (!busy) {
 			// Reserva memoria para el paquete
+			LlegadaMsg * pktllegada_tx = (LlegadaMsg*)(call Packet.getPayload(&pkt, sizeof(LlegadaMsg)));
+			//Reserva erronea
+			if(pktllegada_tx == NULL){
+				return;
+			}
+
+			//Forma el paquete
+			pktllegada_tx->ID_movil = MOVIL_ID;
+			pktllegada_tx->orden = ORDEN_INICIAL;
+
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LlegadaMsg)) == SUCCESS){
+				//						|-> Destino = Difusión
+				busy = TRUE;	// Ocupado
+				// Enciende los 3 leds cuando envía el paquete que organiza los slots
+				call Leds.led0On();
+				call Leds.led1On();
+				call Leds.led2On();
+			}
+
+			/*MENSAJE PARA RECIBIR RSSI
 			MovilMsg* pktmovil_tx = (MovilMsg*)(call Packet.getPayload(&pkt, sizeof(MovilMsg)));
 
 			// Reserva errónea
@@ -105,7 +126,7 @@ implementation {
 				call Leds.led0On();
 				call Leds.led1On();
 				call Leds.led2On();
-			}
+			}*/
 		}
 	}
 
@@ -116,7 +137,7 @@ implementation {
 		}
 	}
 
-	// Enciende los leds según el nodo emisor
+	/*// Enciende los leds según el nodo emisor
 	void turnOnLeds(int16_t nodo) {
 		// Determina el emisor del mensaje recibido
 		if (nodo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
@@ -137,16 +158,13 @@ implementation {
 			call Leds.led1Off();   	// Led 1 Off
 			call Leds.led2On();    	// Led 2 On para fijo 3
 		}
-	}
+	}*/
 
-		// Fórmula para obtener la distancia a partir del RSSI, se llama una vez por cada nodo fijo
+	// Fórmula para obtener la distancia a partir del RSSI, se llama una vez por cada nodo fijo
 	float getDistance(int16_t rssiX){
-    
-    // Convertir RSSI a float
-    float rssi_float = (float) rssiX;
-		/* Fórmula:
-			RSSI(D) = a·log(D) + b
-			D = 10^((RSSI-b)/a) */
+        // Convertir RSSI a float
+    	float rssi_float = (float) rssiX;
+		/* Fórmula: RSSI(D) = a·log(D) + b; D = 10^((RSSI-b)/a) */
 		return 100 * powf(10, (rssi_float-b)/a );
 	}
 
@@ -166,7 +184,7 @@ implementation {
 	}
 
 
-// Recibe un mensaje de cualquiera de los nodos fijos
+// Recibe un mensaje de cualquiera de los nodos fijos, el primer mensaje tiene que ser del master
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
 
 			call Leds.led0Off();   	// Led 0 Off
@@ -270,6 +288,20 @@ implementation {
 					pktmovil_loc->coorX = 0;
 					pktmovil_loc->coorY = 0;
 				}
+			}
+		}else if (len == sizeof(SitiosLibresMsg)){
+			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
+
+			if(pktsitioslibres_rx->estado1 == LIBRE){
+				
+				pktsitioslibres_rx->movilAsociado1 = ID_MOVIL;
+				pktsitioslibres_rx->estado1 = RESERVADO;
+			}else if (pktsitioslibres_rx->estado2 == LIBRE){
+
+			}else if(pktsitioslibres_rx->estado3 == LIBRE){
+
+			}else{
+				//NO HAY SITIOS LIBRES, ENCIENDE LUZ ROJA 5 SEGUNDOS Y TE PIRAS
 			}
 		}
 		return msg;
