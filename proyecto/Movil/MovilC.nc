@@ -5,6 +5,7 @@ module MovilC {
 	uses interface Boot;
 	uses interface Leds;
 	uses interface Timer<TMilli> as Timer0;
+	uses interface Timer<TMilli> as TimerLedRojo;
 	uses interface Packet;
 	uses interface AMPacket;
 	uses interface AMSend;
@@ -19,6 +20,11 @@ implementation {
 	uint16_t fourth = MOVIL_ID; 		// 4º slot (Siempre Maestro)
 	message_t pkt;        				// Espacio para el pkt a tx
 	bool busy = FALSE;    				// Flag para comprobar el estado de la radio
+	
+	//Para led rojo enciende y apaga
+	enum {
+		TIEMPO_ROJO_ENCENDIDO = 5000
+	};
 
 	// Coordenadas de los nodos fijos
 	uint16_t coor1_x = 0;
@@ -134,6 +140,13 @@ implementation {
 	event void AMSend.sendDone(message_t* msg, error_t err) {
 		if (&pkt == msg) {
 			busy = FALSE;	// Libre
+		}
+	}
+
+	//Funcion que enciende y apaga luz durante un tiempo determinado
+	event void TimerLedRojo.fired(){
+		if (call Leds.get() & LEDS_LED1){
+			call Leds.led1Off();
 		}
 	}
 
@@ -293,15 +306,31 @@ implementation {
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
 
 			if(pktsitioslibres_rx->estado1 == LIBRE){
-				
+				// Enciende led verde para notificar hueco libre encontrado
+				call Leds.led0On();   	// Led 0 On
+				call Leds.led1Off();   	// Led 1 Off
+				call Leds.led2Off();    // Led 2 Off
 				pktsitioslibres_rx->movilAsociado1 = ID_MOVIL;
 				pktsitioslibres_rx->estado1 = RESERVADO;
 			}else if (pktsitioslibres_rx->estado2 == LIBRE){
-
+				call Leds.led0On();   	// Led 0 On
+				call Leds.led1Off();   	// Led 1 Off
+				call Leds.led2Off();    // Led 2 Off
+				pktsitioslibres_rx->movilAsociado2 = ID_MOVIL;
+				pktsitioslibres_rx->estado2 = RESERVADO;
 			}else if(pktsitioslibres_rx->estado3 == LIBRE){
-
+				call Leds.led0On();   	// Led 0 On
+				call Leds.led1Off();   	// Led 1 Off
+				call Leds.led2Off();    // Led 2 Off
+				pktsitioslibres_rx->movilAsociado3 = ID_MOVIL;
+				pktsitioslibres_rx->estado3 = RESERVADO;
 			}else{
 				//NO HAY SITIOS LIBRES, ENCIENDE LUZ ROJA 5 SEGUNDOS Y TE PIRAS
+				// Enciende led rojo para notificar no hueco libre encontrado
+				call Leds.led0Off();   	// Led 0 Off
+				call Leds.led1On();   	// Led 1 On
+				call Leds.led2Off();    // Led 2 Off
+				call TimerLedRojo.startOneShot(TIEMPO_LED_ROJO);
 			}
 		}
 		return msg;
