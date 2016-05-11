@@ -14,32 +14,33 @@ module MovilC {
 }
 implementation {
 	int16_t rssi = 0;					// Rssi recibido
-	uint16_t first = FIJO1_ID;	// 1º slot (defecto: Temperatura)
-	uint16_t second = FIJO2_ID;	// 2º slot (defecto: Humedad)
-	uint16_t third = FIJO3_ID;	// 3º slot (defecto: Luminosidad)
-	uint16_t fourth = MOVIL_ID; 		// 4º slot (Siempre Maestro)
+	uint16_t master = MASTER_ID;		// 1º slot: id master
+	uint16_t first = FIJO1_ID;			// 2º slot: id fijo 1
+	uint16_t second = FIJO2_ID;			// 3º slot: id fijo 2
+	uint16_t third = FIJO3_ID;			// 4º slot: id fijo 3
+	uint16_t fourth = MOVIL_ID; 		// 5º slot: id movil
 	message_t pkt;        				// Espacio para el pkt a tx
 	bool busy = FALSE;    				// Flag para comprobar el estado de la radio
-	
-	//Para led rojo enciende y apaga
-	enum {
-		TIEMPO_ROJO_ENCENDIDO = 5000
-	};
+
 
 	// Coordenadas de los nodos fijos
+	uint16_t coorm_x = 0;
+	uint16_t coorm_y = 0;
 	uint16_t coor1_x = 0;
-	uint16_t coor1_y = 0;
-	uint16_t coor2_x = 200;
-	uint16_t coor2_y = 0;
-	uint16_t coor3_x = 100;
-	uint16_t coor3_y = 100;
+	uint16_t coor1_y = 300;
+	uint16_t coor2_x = 300;
+	uint16_t coor2_y = 300;
+	uint16_t coor3_x = 300;
+	uint16_t coor3_y = 0;
 
 	// Distancia a nodos fijos Dij
+	float distance_nm = 0;
 	float distance_n1 = 0;
 	float distance_n2 = 0;
 	float distance_n3 = 0;
 
 	// Pesos wij
+	float w_nm = 0;
 	float w_n1 = 0;
 	float w_n2 = 0;
 	float w_n3 = 0;
@@ -54,7 +55,6 @@ implementation {
 
 
   /* RSSI en función de la distancia: RSSI(D) = a·log(D)+b */
-	
 
 	/* Exponente que modifica la influencia de la distancia en los pesos.
 	Valores más altos de p dan más importancia a los nodos fijos más cercanos */
@@ -103,36 +103,40 @@ implementation {
 				call Leds.led1On();
 				call Leds.led2On();
 			}
+		}
+	}
 
-			/*MENSAJE PARA RECIBIR RSSI
-			MovilMsg* pktmovil_tx = (MovilMsg*)(call Packet.getPayload(&pkt, sizeof(MovilMsg)));
 
-			// Reserva errónea
-			if (pktmovil_tx == NULL) {
-				return;
-			}
 
-			/*** FORMA EL PAQUETE ***/
-			// Campo 1: ID_movil
-			pktmovil_tx->ID_movil = MOVIL_ID;
-			// Campo 2: Tslot
-			pktmovil_tx->Tslot = TIMER_PERIOD_MILLI/SLOTS;
-			// Campos 3, 4 y 5: Orden de los slots
-			pktmovil_tx->first = first;
-			pktmovil_tx->second = second;
-			pktmovil_tx->third = third;
-			// Campo 6: Último slot siempre para el movil
-			pktmovil_tx->fourth = fourth;
+	void sendMsgRSSI (){
+		//ENVIA MENSAJE PARA RECIBIR RSSI
+		MovilMsg* pktmovil_tx = (MovilMsg*)(call Packet.getPayload(&pkt, sizeof(MovilMsg)));
 
-			// Envía
-			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MovilMsg)) == SUCCESS) {
-				//						|-> Destino = Difusión
-				busy = TRUE;	// Ocupado
-				// Enciende los 3 leds cuando envía el paquete que organiza los slots
-				call Leds.led0On();
-				call Leds.led1On();
-				call Leds.led2On();
-			}*/
+		// Reserva errónea
+		if (pktmovil_tx == NULL) {
+			return;
+		}
+		//Forma el paquete
+		// Campo 1: ID_movil
+		pktmovil_tx->ID_movil = MOVIL_ID;
+		// Campo 2: Tslot
+		pktmovil_tx->Tslot = TIMER_PERIOD_MILLI/SLOTS;
+		// Campos 3, 4, 5 y 6: Orden de los slots
+		pktmovil_tx->master = master;
+		pktmovil_tx->first = first;
+		pktmovil_tx->second = second;
+		pktmovil_tx->third = third;
+		// Campo 6: Último slot siempre para el movil
+		pktmovil_tx->fourth = fourth;
+
+		// Envía
+		if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MovilMsg)) == SUCCESS) {
+			//						|-> Destino = Difusión
+			busy = TRUE;
+			// Enciende los 3 leds cuando envía el paquete que organiza los slots
+			call Leds.led0On();
+			call Leds.led1On();
+			call Leds.led2On();
 		}
 	}
 
@@ -189,11 +193,11 @@ implementation {
 		return 1/(powf(distance,pvalue));
 	}
 
-	int16_t calculateLocation(float w1, float w2, float w3, uint16_t c1, uint16_t c2, uint16_t c3) {
+	int16_t calculateLocation(float wm, float w1, float w2, float w3, uint16_t cm, uint16_t c1, uint16_t c2, uint16_t c3) {
 		/* Fórmula:
-			X = (w1·x1 + w2·x2 + w3·x3)/(w1 + w2 + w3)
-			Y = (w1·y1 + w2·y2 + w3·y3)/(w1 + w2 + w3) */
-		return (w1*c1+w2*c2+w3*c3)/(w1+w2+w3);
+			X = (wm·xm + w1·x1 + w2·x2 + w3·x3)/(wm + w1 + w2 + w3)
+			Y = (wm·ym + w1·y1 + w2·y2 + w3·y3)/(wm + w1 + w2 + w3) */
+		return (wm* cm + w1*c1 + w2*c2 + w3*c3)/(wm + w1 + w2 + w3);
 	}
 
 
@@ -208,7 +212,17 @@ implementation {
 			FijoMsg* pktfijo_rx = (FijoMsg*)payload;		// Extrae el payload
 
 			// Determina el emisor del mensaje recibido
-			if (pktfijo_rx->ID_fijo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
+			if (pktfijo_rx->ID_fijo == MASTER_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
+				// Enciende los leds para notificar la llegada de un paquete
+				turnOnLeds(pktfijo_rx->ID_fijo);
+
+				rssi = pktfijo_rx->medidaRssi;
+				// Calcula la distancia al nodo master en base al RSSI
+				distance_nm = getDistance(rssi);
+				// Calcula el peso del nodo 1
+				w_nm = getWeigth(distance_nm,p);
+			}
+			else if (pktfijo_rx->ID_fijo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
 				// Enciende los leds para notificar la llegada de un paquete
 				turnOnLeds(pktfijo_rx->ID_fijo);
 
@@ -241,9 +255,9 @@ implementation {
 				/* Llegados a este punto ya tenemos TODOS los datos de los nodos fijos,
 				así que podemos calcular la localizacón del nodo móvil y enviar el resultado*/
 				// Calculamos la coordenada X del nodo móvil
-				movilX = calculateLocation(w_n1,w_n2,w_n3,coor1_x,coor2_x,coor3_x);
+				movilX = calculateLocation(w_nm,w_n1,w_n2,w_n3,coorm_x,coor1_x,coor2_x,coor3_x);
 				// Calculamos la coordenada Y del nodo móvil
-				movilY = calculateLocation(w_n1,w_n2,w_n3,coor1_y,coor2_y,coor3_y);
+				movilY = calculateLocation(w_nm,w_n1,w_n2,w_n3,coorm_y,coor1_y,coor2_y,coor3_y);
 
 				// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
 				if (!busy) {
@@ -263,22 +277,11 @@ implementation {
 					// Campo 3: Coordenada Y
 					pktmovil_loc->coorY = movilY;
 
-          pktmovil_loc->distance1 = (uint16_t) distance_n1;
-          pktmovil_loc->distance2 = (uint16_t) distance_n2;
-          pktmovil_loc->distance3 = (uint16_t) distance_n3;
+					pktmovil_loc->distancem = (uint16_t) distance_nm;
+	        	  	pktmovil_loc->distance1 = (uint16_t) distance_n1;
+    		      	pktmovil_loc->distance2 = (uint16_t) distance_n2;
+        			pktmovil_loc->distance3 = (uint16_t) distance_n3;
 
-
-					/* ¡¡ __TEST__ !!
-						Para comprobar los pasos intermedios: comentar arriba,
-						descomentar lo siguiente y ver en la Base Station: */
-					// 	1.- Distancia
-					//pktmovil_loc->ID_movil = distance_n1*100;
-					//pktmovil_loc->coorX = distance_n2*100;
-					//pktmovil_loc->coorY = distance_n3*100;
-					// 	2.- Pesos
-					//pktmovil_loc->ID_movil = w_n1;
-					//pktmovil_loc->coorX = w_n2;
-					//pktmovil_loc->coorY = w_n3;
 
 					// Envía
 					if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LocationMsg)) == SUCCESS) {
@@ -312,18 +315,61 @@ implementation {
 				call Leds.led2Off();    // Led 2 Off
 				pktsitioslibres_rx->movilAsociado1 = ID_MOVIL;
 				pktsitioslibres_rx->estado1 = RESERVADO;
+
+				//Envía
+				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+					busy = TRUE;	// Ocupado
+				}
+				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
+				sendMsgRSSI();
+
+
 			}else if (pktsitioslibres_rx->estado2 == LIBRE){
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
 				pktsitioslibres_rx->movilAsociado2 = ID_MOVIL;
 				pktsitioslibres_rx->estado2 = RESERVADO;
+
+				//Envía
+				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+					busy = TRUE;	// Ocupado
+				}
+				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
+				sendMsgRSSI();
+
+
+
+
+
+
+
+
+				/************* CAMBIAR EL MENSAJE QUE SE MANDA AL BASESTATION CON LA LOCALIZACION POR COMPROBAR SI ESTAS PARADO BLABLABLA ******************/
+
+
+
+
+
+
+
+
+
 			}else if(pktsitioslibres_rx->estado3 == LIBRE){
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
 				pktsitioslibres_rx->movilAsociado3 = ID_MOVIL;
 				pktsitioslibres_rx->estado3 = RESERVADO;
+
+				//Envía
+				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+					busy = TRUE;	// Ocupado
+				}
+				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
+				sendMsgRSSI();
+
+
 			}else{
 				//NO HAY SITIOS LIBRES, ENCIENDE LUZ ROJA 5 SEGUNDOS Y TE PIRAS
 				// Enciende led rojo para notificar no hueco libre encontrado
