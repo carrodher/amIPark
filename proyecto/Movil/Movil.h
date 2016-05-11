@@ -39,6 +39,32 @@ typedef nx_struct LocationMsg {
 typedef nx_struct LlegadaMsg {
 	nx_uint16_t ID_movil;		//ID movil 
 	nx_uint16_t orden;			//orden para saber que hacer (llegada, salida....)
-};
+} LlegadaMsg;
+
+typedef nx_struct BaseDatos {
+	nx_uint16_t ID_plaza1;
+	nx_uint16_t coorX1;
+	nx_uint16_t coorY1;
+	nx_uint16_t movilAsociado1;	//ID del movil que esta aparcado o quiere aparcarse
+	nx_uint16_t estado1;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
+	nx_uint16_t ID_plaza2;
+	nx_uint16_t coorX2;
+	nx_uint16_t coorY2;
+	nx_uint16_t movilAsociado2;	//ID del movil que esta aparcado o quiere aparcarse
+	nx_uint16_t estado2;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
+	nx_uint16_t ID_plaza3;
+	nx_uint16_t coorX3;
+	nx_uint16_t coorY3;
+	nx_uint16_t movilAsociado3;	//ID del movil que esta aparcado o quiere aparcarse
+	nx_uint16_t estado3;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
+}BaseDatos;
+
+typedef nx_struct SitiosLibresMsg {
+	nx_struct BaseDatos;
+}SitiosLibresMsg;
+
+
+
+
 
 #endif
