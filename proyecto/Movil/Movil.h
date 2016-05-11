@@ -36,4 +36,9 @@ typedef nx_struct LocationMsg {
   nx_uint16_t distance3;
 } LocationMsg;
 
+typedef nx_struct LlegadaMsg {
+	nx_uint16_t ID_movil;		//ID movil 
+	nx_uint16_t orden;			//orden para saber que hacer (llegada, salida....)
+};
+
 #endif
