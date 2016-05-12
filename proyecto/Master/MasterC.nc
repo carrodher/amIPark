@@ -1,6 +1,6 @@
-#include "Fijo.h"
+#include "Master.h"
 
-module FijoC {
+module MasterC {
 	uses interface Boot;
 	uses interface Leds;
 	uses interface CC2420Packet;
@@ -15,22 +15,16 @@ module FijoC {
 
 implementation {
   
-  uint8_t   nodeID;       // Almacena el identificador de este nodo
-
+    uint8_t   nodeID;       // Almacena el identificador de este nodo
 	message_t pkt;			   	// Espacio para el pkt a tx
-
 	bool busy = FALSE;		  // Flag para comprobar el estado de la radio
-
 	int16_t rssi2; 				  // Valor RSSI a enviar ( devuelto por getRssi() )
-
 
 	// Obtiene el valor RSSI del paquete recibido
 	int16_t getRssi(message_t *msg){
-    
-    // Valores usados internamente en la función
-    uint8_t rssi_t;    // Se extrae en 8 bits sin signo
-    int16_t rssi2_t;   // Se calcula en 16 bits con signo: la potencia recibida estará entre -10 y -90 dBm
-
+    	// Valores usados internamente en la función
+    	uint8_t rssi_t;    // Se extrae en 8 bits sin signo
+    	int16_t rssi2_t;   // Se calcula en 16 bits con signo: la potencia recibida estará entre -10 y -90 dBm
 		rssi_t = call CC2420Packet.getRssi(msg);
 
 		if(rssi_t >= 128) {
@@ -39,7 +33,6 @@ implementation {
 		else {
 			rssi2_t = rssi_t-45;
 		}
-
 		return rssi2_t;
 	}
 
@@ -148,6 +141,44 @@ implementation {
 				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
 			}
 			// En cualquiera de los casos cuando expira el temporizador dirige a "event void Timer0.fired()
+		}else{
+			// Si el paquete tiene la longitud correcta y es del nodo móvil
+			if (len == sizeof(LlegadaMsg) && pktmovil_rx->ID_movil == MOVIL_ID) {
+				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+
+				// Reserva errónea
+				if (pktsitioslibres_tx == NULL) {
+					return;
+				}
+				//Forma el paquete
+				// Campos plaza 1
+				pktsitioslibres_tx->BaseDatos.ID_plaza1 = APARC1_ID;
+				pktsitioslibres_tx->BaseDatos.coorX1 = COORD_APARC_X1;
+				pktsitioslibres_tx->BaseDatos.coorY1 = COORD_APARC_Y1;
+				pktsitioslibres_tx->BaseDatos.movilAsociado1 = NO_MOVIL_ASOCIADO;
+				pktsitioslibres_tx->BaseDatos.estado1 = LIBRE;
+				// Campos plaza 2
+				pktsitioslibres_tx->BaseDatos.ID_plaza2 = APARC2_ID;
+				pktsitioslibres_tx->BaseDatos.coorX2 = COORD_APARC_X2;
+				pktsitioslibres_tx->BaseDatos.coorY2 = COORD_APARC_Y2;
+				pktsitioslibres_tx->BaseDatos.movilAsociado2 = NO_MOVIL_ASOCIADO;
+				pktsitioslibres_tx->BaseDatos.estado2 = LIBRE;
+				// Campos plaza 3
+				pktsitioslibres_tx->BaseDatos.ID_plaza3 = APARC3_ID;
+				pktsitioslibres_tx->BaseDatos.coorX3 = COORD_APARC_X3;
+				pktsitioslibres_tx->BaseDatos.coorY3 = COORD_APARC_Y3;
+				pktsitioslibres_tx->BaseDatos.movilAsociado3 = NO_MOVIL_ASOCIADO;
+				pktsitioslibres_tx->BaseDatos.estado3 = LIBRE;
+
+				// Envía
+				if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
+					busy = TRUE;
+					// Enciende los 3 leds cuando envía el paquete largo primero
+					call Leds.led0On();
+					call Leds.led1On();
+					call Leds.led2On();
+				}
+			}
 		}
 
 		return msg;

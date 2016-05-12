@@ -14,15 +14,10 @@ module FijoC {
 
 
 implementation {
-  
-  uint8_t   nodeID;       // Almacena el identificador de este nodo
-
+    uint8_t   nodeID;       // Almacena el identificador de este nodo
 	message_t pkt;			   	// Espacio para el pkt a tx
-
 	bool busy = FALSE;		  // Flag para comprobar el estado de la radio
-
 	int16_t rssi2; 				  // Valor RSSI a enviar ( devuelto por getRssi() )
-
 
 	// Obtiene el valor RSSI del paquete recibido
 	int16_t getRssi(message_t *msg){

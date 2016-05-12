@@ -2,38 +2,75 @@
 #define FIJO1_H
 
 enum {
-	TIMER_PERIOD_MILLI = 5000,
-	SLOTS     = 5,
-
-	AM_FIJO   = 13,
-
-	MOVIL_ID  = 130,
-	FIJO1_ID  = 131,
-	FIJO2_ID  = 132,
-	FIJO3_ID  = 133,
-
-	FIJO1_X   = 0,    //   [Y]
-	FIJO1_Y   = 0,    //    |
-	FIJO2_X   = 2,    //    |     (3)
-	FIJO2_Y   = 0,    //    |
-	FIJO3_X   = 1,    //    |
-	FIJO3_Y   = 1     //   (1)-----------(2)----------[X]
+	TIMER_PERIOD_MILLI 		= 5000,
+	TIEMPO_ROJO_ENCENDIDO 	= 5000, 	//timer para led rojo encendido si no encuentra aparcamiento libre
+	AM_MOVIL 				= 13,
+	MOVIL_ID 				= 130,
+	FIJO1_ID  		  		= 131,
+	FIJO2_ID    			= 132,
+	FIJO3_ID    			= 133,
+	MASTER_ID				= 134,
+	SLOTS					= 6,
+	ORDEN_INICIAL 			= 0,
+	LIBRE 					= 0,
+	RESERVADO 				= 1,
+	OCUPADO 				=2
 };
 
 typedef nx_struct MovilMsg {
-	nx_uint16_t ID_movil;		  // ID movil = ID origen
-	nx_uint16_t Tslot;			  // Tiempo de slot
-	nx_uint16_t first;			  // 1º slot para este fijo
-	nx_uint16_t second;			  // 2º slot para este fijo
-	nx_uint16_t third;			  // 3º slot para este fijo
-	nx_uint16_t fourth;			  // 4º slot para el móvil
+	nx_uint16_t ID_movil;		// ID maestro = ID origen
+	nx_uint16_t Tslot;			// Tiempo de slot
+	nx_uint16_t master;			// 1º slot para master
+	nx_uint16_t first;			// 2º slot para fijo1
+	nx_uint16_t second;			// 3º slot para fijo2
+	nx_uint16_t third;			// 4º slot para fijo3
+	nx_uint16_t fourth;			// 5º slot para movil
 } MovilMsg;
 
 typedef nx_struct FijoMsg {
-	nx_uint16_t ID_fijo;		  // ID fijo = ID origen
-	nx_int16_t  medidaRssi;		// Valor de la medida RSSI
-	nx_uint16_t x;				    // Coordenada X
-	nx_uint16_t y;				    // Coordenada Y
+	nx_uint16_t ID_fijo;		// ID fijo = ID origen
+	nx_int16_t medidaRssi;		// Valor de la medida RSSI
+	nx_uint16_t x;				// Valor de la coordenada X del fijo
+	nx_uint16_t y;				// Valor de la coordenada Y del fijo
 } FijoMsg;
+
+typedef nx_struct LocationMsg {
+	nx_uint16_t ID_movil;		// ID movil = ID origen
+	nx_uint16_t coorX;			// Valor de la coordenada X del movil calculada
+	nx_uint16_t coorY;			// Valor de la coordenada Y del movil calculada
+	nx_uint16_t distancem;
+    nx_uint16_t distance1;
+    nx_uint16_t distance2;
+    nx_uint16_t distance3;
+} LocationMsg;
+
+typedef nx_struct LlegadaMsg {
+	nx_uint16_t ID_movil;		//ID movil 
+	nx_uint16_t orden;			//orden para saber que hacer (llegada, salida....)
+} LlegadaMsg;
+
+typedef nx_struct BaseDatos {
+	nx_uint16_t ID_plaza1;
+	nx_uint16_t coorX1;
+	nx_uint16_t coorY1;
+	nx_uint16_t movilAsociado1;	//ID del movil que esta aparcado o quiere aparcarse
+	nx_uint16_t estado1;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
+	nx_uint16_t ID_plaza2;
+	nx_uint16_t coorX2;
+	nx_uint16_t coorY2;
+	nx_uint16_t movilAsociado2;	//ID del movil que esta aparcado o quiere aparcarse
+	nx_uint16_t estado2;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
+	nx_uint16_t ID_plaza3;
+	nx_uint16_t coorX3;
+	nx_uint16_t coorY3;
+	nx_uint16_t movilAsociado3;	//ID del movil que esta aparcado o quiere aparcarse
+	nx_uint16_t estado3;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
+}BaseDatos;
+
+typedef nx_struct SitiosLibresMsg {
+	nx_struct BaseDatos;
+}SitiosLibresMsg;
+
+
 
 #endif

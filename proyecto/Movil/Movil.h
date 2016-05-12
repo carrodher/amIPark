@@ -10,11 +10,21 @@ enum {
 	FIJO2_ID    			= 132,
 	FIJO3_ID    			= 133,
 	MASTER_ID				= 134,
+	APARC1_ID				= 1,
+	APARC2_ID				= 2,
+	APARC3_ID				= 3,
 	SLOTS					= 6,
 	ORDEN_INICIAL 			= 0,
+	COORD_APARC_X1			= 50,
+	COORD_APARC_Y1			= 250,
+	COORD_APARC_X2			= 150,
+	COORD_APARC_Y2			= 250,
+	COORD_APARC_X3			= 250,
+	COORD_APARC_Y3			= 250,
+	NO_MOVIL_ASOCIADO		= 0,
 	LIBRE 					= 0,
 	RESERVADO 				= 1,
-	OCUPADO 				=2
+	OCUPADO 				= 2
 };
 
 typedef nx_struct MovilMsg {
