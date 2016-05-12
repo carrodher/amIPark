@@ -4,18 +4,37 @@
 enum {
 	TIMER_PERIOD_MILLI 		= 5000,
 	TIEMPO_ROJO_ENCENDIDO 	= 5000, 	//timer para led rojo encendido si no encuentra aparcamiento libre
-	AM_MOVIL 				= 13,
+	AM_FIJO					= 13,
 	MOVIL_ID 				= 130,
 	FIJO1_ID  		  		= 131,
 	FIJO2_ID    			= 132,
 	FIJO3_ID    			= 133,
 	MASTER_ID				= 134,
+	APARC1_ID				= 1,
+	APARC2_ID				= 2,
+	APARC3_ID				= 3,
 	SLOTS					= 6,
 	ORDEN_INICIAL 			= 0,
+	FIJOM_X					= 0,
+	FIJOM_Y					= 0,
+	FIJO1_X					= 0,
+	FIJO1_Y					= 300,
+	FIJO2_X					= 300,
+	FIJO2_Y					= 300,
+	FIJO3_X					= 300,
+	FIJO3_Y					= 0,
+	COORD_APARC_X1			= 50,
+	COORD_APARC_Y1			= 250,
+	COORD_APARC_X2			= 150,
+	COORD_APARC_Y2			= 250,
+	COORD_APARC_X3			= 250,
+	COORD_APARC_Y3			= 250,
+	NO_MOVIL_ASOCIADO		= 0,
 	LIBRE 					= 0,
 	RESERVADO 				= 1,
-	OCUPADO 				=2
+	OCUPADO 				= 2
 };
+
 
 typedef nx_struct MovilMsg {
 	nx_uint16_t ID_movil;		// ID maestro = ID origen
@@ -49,8 +68,8 @@ typedef nx_struct LlegadaMsg {
 	nx_uint16_t orden;			//orden para saber que hacer (llegada, salida....)
 } LlegadaMsg;
 
-typedef nx_struct BaseDatos {
-	nx_uint16_t ID_plaza1;
+typedef nx_struct SitiosLibresMsg {
+		nx_uint16_t ID_plaza1;
 	nx_uint16_t coorX1;
 	nx_uint16_t coorY1;
 	nx_uint16_t movilAsociado1;	//ID del movil que esta aparcado o quiere aparcarse
@@ -65,10 +84,6 @@ typedef nx_struct BaseDatos {
 	nx_uint16_t coorY3;
 	nx_uint16_t movilAsociado3;	//ID del movil que esta aparcado o quiere aparcarse
 	nx_uint16_t estado3;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
-}BaseDatos;
-
-typedef nx_struct SitiosLibresMsg {
-	nx_struct BaseDatos;
 }SitiosLibresMsg;
 
 

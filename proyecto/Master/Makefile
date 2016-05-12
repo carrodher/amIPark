@@ -1,2 +1,2 @@
-COMPONENT=FijoAppC
+COMPONENT=MasterAppC
 include $(MAKERULES)

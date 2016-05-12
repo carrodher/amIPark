@@ -118,7 +118,7 @@ implementation {
 			return;
 		}
 		//Forma el paquete
-		// Campo 1: ID_movil
+		// Campo 1: MOVIL_ID
 		pktmovil_tx->ID_movil = MOVIL_ID;
 		// Campo 2: Tslot
 		pktmovil_tx->Tslot = TIMER_PERIOD_MILLI/SLOTS;
@@ -207,41 +207,127 @@ implementation {
 		return (wm* cm + w1*c1 + w2*c2 + w3*c3)/(wm + w1 + w2 + w3);
 	}
 
-	bool am_i_parked(uint16_t movilX, uint16_t movilY){
+	void sendParkedState(int i){
+		if(i == 0){
+			// Reserva memoria para el paquete
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			pktsitioslibres_tx->movilAsociado1 = MOVIL_ID;
+			pktsitioslibres_tx->estado1 = OCUPADO;
+
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+			}
+		}else if(i == 1){
+			// Reserva memoria para el paquete
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			pktsitioslibres_tx->movilAsociado2 = MOVIL_ID;
+			pktsitioslibres_tx->estado2 = OCUPADO;
+
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+			}
+		}else if(i == 2){
+			// Reserva memoria para el paquete
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			pktsitioslibres_tx->movilAsociado3 = MOVIL_ID;
+			pktsitioslibres_tx->estado3 = OCUPADO;
+
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+			}
+		}
+		
+	}
+
+	bool am_i_parked(uint16_t movilXr, uint16_t movilYr){
 		bool parked = FALSE;
-		if(movilX <= (COORD_APARC_X1+50) && movilX >= (COORD_APARC_X1-50) && movilY <= (COORD_APARC_Y1+50) && movilY >= (COORD_APARC_Y1-50)){
-			pktsitioslibres_rx->BaseDatos.movilAsociado1 = ID_MOVIL;
-			pktsitioslibres_rx->BaseDatos.estado1 = OCUPADO;
-
-			//Envía
-			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-				busy = TRUE;	// Ocupado
-			}
+		int i;
+		if(movilXr <= (COORD_APARC_X1+50) && movilXr >= (COORD_APARC_X1-50) && movilYr <= (COORD_APARC_Y1+50) && movilYr >= (COORD_APARC_Y1-50)){
+			i = 0;
+			sendParkedState(i);
 			parked = TRUE;
-		}else if(movilX <= (COORD_APARC_X2+50) && movilX >= (COORD_APARC_X2-50) && movilY <= (COORD_APARC_Y2+50) && movilY >= (COORD_APARC_Y2-50)){
-			pktsitioslibres_rx->BaseDatos.movilAsociado2 = ID_MOVIL;
-			pktsitioslibres_rx->BaseDatos.estado2 = OCUPADO;
-
-			//Envía
-			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-				busy = TRUE;	// Ocupado
-			}
+		}else if(movilXr <= (COORD_APARC_X2+50) && movilXr >= (COORD_APARC_X2-50) && movilYr <= (COORD_APARC_Y2+50) && movilYr >= (COORD_APARC_Y2-50)){
+			i = 1;
+			sendParkedState(i);
 			parked = TRUE;
-		}else if(movilX <= (COORD_APARC_X3+50) && movilX >= (COORD_APARC_X3-50) && movilY <= (COORD_APARC_Y3+50) && movilY >= (COORD_APARC_Y3-50)){
-			pktsitioslibres_rx->BaseDatos.movilAsociado3 = ID_MOVIL;
-			pktsitioslibres_rx->BaseDatos.estado3 = OCUPADO;
-
-			//Envía
-			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-				busy = TRUE;	// Ocupado
-			}
+		}else if(movilXr <= (COORD_APARC_X3+50) && movilXr >= (COORD_APARC_X3-50) && movilYr <= (COORD_APARC_Y3+50) && movilYr >= (COORD_APARC_Y3-50)){
+			i = 2;
+			sendParkedState(i);
 			parked = TRUE;
 		}
 		return parked;
 	}
 
+	void sendReservedState (int i){
+		if (i == 0){
+			// Reserva memoria para el paquete
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			pktsitioslibres_tx->movilAsociado1 = MOVIL_ID;
+			pktsitioslibres_tx->estado1 = RESERVADO;
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+			}
+			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
+			sendMsgRSSI();
+		}else if(i == 1){
+			// Reserva memoria para el paquete
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			pktsitioslibres_tx->movilAsociado2 = MOVIL_ID;
+			pktsitioslibres_tx->estado2 = RESERVADO;
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+			}
+			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
+			sendMsgRSSI();
+
+		}else if(i == 2){
+			// Reserva memoria para el paquete
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			pktsitioslibres_tx->movilAsociado3 = MOVIL_ID;
+			pktsitioslibres_tx->estado3 = RESERVADO;
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+			}
+			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
+			sendMsgRSSI();
+		}
+	}
+
 // Recibe un mensaje de cualquiera de los nodos fijos, el primer mensaje tiene que ser del master
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
+			int i;
+			bool parked2 = FALSE;
 
 			call Leds.led0Off();   	// Led 0 Off
 			call Leds.led1Off();   	// Led 1 Off
@@ -298,7 +384,7 @@ implementation {
 				// Calculamos la coordenada Y del nodo móvil
 				movilY = calculateLocation(w_nm,w_n1,w_n2,w_n3,coorm_y,coor1_y,coor2_y,coor3_y);
 
-				bool parked2 = am_i_parked(movilX,movilY);
+				parked2 = am_i_parked(movilX,movilY);
 				if (parked2 == TRUE){
 					call Leds.led0On();
 					call Leds.led1Off();
@@ -316,7 +402,7 @@ implementation {
 					}
 
 					/*** FORMA EL PAQUETE ***/
-					// Campo 1: ID_movil
+					// Campo 1: MOVIL_ID
 					pktmovil_loc->ID_movil = MOVIL_ID;
 					// Campo 2: Coordenada X
 					pktmovil_loc->coorX = movilX;
@@ -354,78 +440,37 @@ implementation {
 		}else if (len == sizeof(SitiosLibresMsg)){
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
 
-			if(pktsitioslibres_rx->BaseDatos.estado1 == LIBRE){
+			if(pktsitioslibres_rx->estado1 == LIBRE){
 				// Enciende led verde para notificar hueco libre encontrado
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
 
-				// Reserva memoria para el paquete
-				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+				i = 0;
+				sendReservedState(i);
 
-				// Reserva errónea
-				if (pktsitioslibres_tx == NULL) {
-					return;
-				}
-				pktsitioslibres_tx->BaseDatos.movilAsociado1 = ID_MOVIL;
-				pktsitioslibres_tx->BaseDatos.estado1 = RESERVADO;
-
-				//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-				}
-				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-				sendMsgRSSI();
-
-			}else if (pktsitioslibres_rx->BaseDatos.estado2 == LIBRE){
+			}else if (pktsitioslibres_rx->estado2 == LIBRE){
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
-				// Reserva memoria para el paquete
-				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+				
+				i = 1;
+				sendReservedState(i);
 
-				// Reserva errónea
-				if (pktsitioslibres_tx == NULL) {
-					return;
-				}
-				pktsitioslibres_tx->BaseDatos.movilAsociado2 = ID_MOVIL;
-				pktsitioslibres_tx->BaseDatos.estado2 = RESERVADO;
-
-				//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-				}
-				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-				sendMsgRSSI();
-
-
-			}else if(pktsitioslibres_rx->BaseDatos.estado3 == LIBRE){
+			}else if(pktsitioslibres_rx->estado3 == LIBRE){
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
-				// Reserva memoria para el paquete
-				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-
-				// Reserva errónea
-				if (pktsitioslibres_tx == NULL) {
-					return;
-				}
-				pktsitioslibres_tx->BaseDatos.movilAsociado3 = ID_MOVIL;
-				pktsitioslibres_tx->BaseDatos.estado3 = RESERVADO;
-
-				//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-				}
-				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-				sendMsgRSSI();
+				
+				i = 2;
+				sendReservedState(i);
 
 			}else{
 				// Enciende led rojo para notificar no hueco libre encontrado
 				call Leds.led0Off();   	// Led 0 Off
 				call Leds.led1On();   	// Led 1 On
 				call Leds.led2Off();    // Led 2 Off
-				call TimerLedRojo.startOneShot(TIEMPO_LED_ROJO);
+				call TimerLedRojo.startOneShot(TIEMPO_ROJO_ENCENDIDO);
 			}
 		}
 		return msg;

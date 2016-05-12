@@ -76,25 +76,28 @@ implementation {
 			pktfijo_tx->ID_fijo    = nodeID;    // Campo 1: ID del nodo fijo
 			pktfijo_tx->medidaRssi = rssi2;     // Campo 2: Medida RSSI
 
-      // Determinar las coordenadas de este nodo fijo
-      switch (nodeID) {
+      		// Determinar las coordenadas de este nodo fijo
+      		switch (nodeID) {
+      			case MASTER_ID:
+          			pktfijo_tx->x = FIJOM_X;   // Campo 3: Coordenada X
+			    	pktfijo_tx->y = FIJOM_Y;   // Campo 4: Coordenada Y
+          		break;
+          		
+        		case FIJO1_ID:
+          			pktfijo_tx->x = FIJO1_X;   // Campo 3: Coordenada X
+			    	pktfijo_tx->y = FIJO1_Y;   // Campo 4: Coordenada Y
+          		break;
 
-        case FIJO1_ID:
-          pktfijo_tx->x = FIJO1_X;   // Campo 3: Coordenada X
-			    pktfijo_tx->y = FIJO1_Y;   // Campo 4: Coordenada Y
-          break;
+        		case FIJO2_ID:
+          			pktfijo_tx->x = FIJO2_X;   // Campo 3: Coordenada X
+			    	pktfijo_tx->y = FIJO2_Y;   // Campo 4: Coordenada Y
+          		break;
 
-        case FIJO2_ID:
-          pktfijo_tx->x = FIJO2_X;   // Campo 3: Coordenada X
-			    pktfijo_tx->y = FIJO2_Y;   // Campo 4: Coordenada Y
-          break;
-
-        case FIJO3_ID:
-          pktfijo_tx->x = FIJO3_X;   // Campo 3: Coordenada X
-			    pktfijo_tx->y = FIJO3_Y;   // Campo 4: Coordenada Y
-          break;
-
-      }
+        		case FIJO3_ID:
+          			pktfijo_tx->x = FIJO3_X;   // Campo 3: Coordenada X
+			    	pktfijo_tx->y = FIJO3_Y;   // Campo 4: Coordenada Y
+          		break;
+      		}
 
 			// Envía
 			if (call AMSend.send(MOVIL_ID, &pkt, sizeof(FijoMsg)) == SUCCESS) {
