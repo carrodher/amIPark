@@ -359,8 +359,16 @@ implementation {
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
-				pktsitioslibres_rx->BaseDatos.movilAsociado1 = ID_MOVIL;
-				pktsitioslibres_rx->BaseDatos.estado1 = RESERVADO;
+
+				// Reserva memoria para el paquete
+				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+
+				// Reserva errónea
+				if (pktsitioslibres_tx == NULL) {
+					return;
+				}
+				pktsitioslibres_tx->BaseDatos.movilAsociado1 = ID_MOVIL;
+				pktsitioslibres_tx->BaseDatos.estado1 = RESERVADO;
 
 				//Envía
 				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
@@ -373,8 +381,15 @@ implementation {
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
-				pktsitioslibres_rx->BaseDatos.movilAsociado2 = ID_MOVIL;
-				pktsitioslibres_rx->BaseDatos.estado2 = RESERVADO;
+				// Reserva memoria para el paquete
+				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+
+				// Reserva errónea
+				if (pktsitioslibres_tx == NULL) {
+					return;
+				}
+				pktsitioslibres_tx->BaseDatos.movilAsociado2 = ID_MOVIL;
+				pktsitioslibres_tx->BaseDatos.estado2 = RESERVADO;
 
 				//Envía
 				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
@@ -382,13 +397,21 @@ implementation {
 				}
 				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
 				sendMsgRSSI();
+
 
 			}else if(pktsitioslibres_rx->BaseDatos.estado3 == LIBRE){
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
-				pktsitioslibres_rx->BaseDatos.movilAsociado3 = ID_MOVIL;
-				pktsitioslibres_rx->BaseDatos.estado3 = RESERVADO;
+				// Reserva memoria para el paquete
+				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+
+				// Reserva errónea
+				if (pktsitioslibres_tx == NULL) {
+					return;
+				}
+				pktsitioslibres_tx->BaseDatos.movilAsociado3 = ID_MOVIL;
+				pktsitioslibres_tx->BaseDatos.estado3 = RESERVADO;
 
 				//Envía
 				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
@@ -397,9 +420,7 @@ implementation {
 				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
 				sendMsgRSSI();
 
-
 			}else{
-				//NO HAY SITIOS LIBRES, ENCIENDE LUZ ROJA 5 SEGUNDOS Y TE PIRAS
 				// Enciende led rojo para notificar no hueco libre encontrado
 				call Leds.led0Off();   	// Led 0 Off
 				call Leds.led1On();   	// Led 1 On
