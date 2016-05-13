@@ -59,13 +59,13 @@ implementation {
 
 		switch (estado){
 			case LIBRE:
-				printf("La plaza %d con coordenadas (%d,%d) se encuentra libre", ID_plaza, coorX, coorY);
+				printf("La plaza %d con coordenadas (%d,%d) se encuentra libre\n", ID_plaza, coorX, coorY);
 			break;
 			case RESERVADO:
-				printf("La plaza %d con coordenadas (%d,%d) se encuentra reservada", ID_plaza, coorX, coorY);
+				printf("La plaza %d con coordenadas (%d,%d) se encuentra reservada\n", ID_plaza, coorX, coorY);
 			break;
 			case OCUPADO:
-				printf("La plaza %d con coordenadas (%d,%d) se encuentra ocupada", ID_plaza, coorX, coorY);
+				printf("La plaza %d con coordenadas (%d,%d) se encuentra ocupada\n", ID_plaza, coorX, coorY);
 			break;
 		}
 
@@ -212,7 +212,7 @@ implementation {
 				// Espera 2 slots = 2*Periodo/nº slots
 				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
 			}else if (pktmovil_rx->master == nodeID) {
-				// Espera 2 slots = 2*Periodo/nº slots
+				// Espera 3 slots = 3*Periodo/nº slots
 				call Timer0.startOneShot(3*pktmovil_rx->Tslot);
 			}
 		}else if (len == sizeof(LlegadaMsg)) {
@@ -227,25 +227,32 @@ implementation {
 				if(pktsitioslibres_rx->estado1 == RESERVADO){
 					movilAsociado1 = pktsitioslibres_rx->movilAsociado1;
 					estado1 = pktsitioslibres_rx->estado1;
+					printf("El movil %d ha reservado la plaza 1\n", movilAsociado1);
 				}else if(pktsitioslibres_rx->estado1 == OCUPADO){
 					movilAsociado1 = pktsitioslibres_rx->movilAsociado1;
 					estado1 = pktsitioslibres_rx->estado1;
+					printf("El movil %d ha aparcado en la plaza 1\n", movilAsociado1);					
 				}
 			}else if (pktsitioslibres_rx->movilAsociado2 != NO_MOVIL_ASOCIADO) {
 				if(pktsitioslibres_rx->estado2 == RESERVADO){
 					movilAsociado2 = pktsitioslibres_rx->movilAsociado2;
 					estado2 = pktsitioslibres_rx->estado2;
+					printf("El movil %d ha reservado la plaza 2\n", movilAsociado2);
 				}else if(pktsitioslibres_rx->estado2 == OCUPADO){
 					movilAsociado2 = pktsitioslibres_rx->movilAsociado2;
 					estado2 = pktsitioslibres_rx->estado2;
+					printf("El movil %d ha aparcado en la plaza 2\n", movilAsociado2);					
+
 				}
 			}else if (pktsitioslibres_rx->movilAsociado3 != NO_MOVIL_ASOCIADO) {
 				if(pktsitioslibres_rx->estado3 == RESERVADO){
 					movilAsociado3 = pktsitioslibres_rx->movilAsociado3;
 					estado3 = pktsitioslibres_rx->estado3;
+					printf("El movil %d ha reservado la plaza 3\n", movilAsociado3);
 				}else if(pktsitioslibres_rx->estado3 == OCUPADO){
 					movilAsociado3 = pktsitioslibres_rx->movilAsociado3;
 					estado3 = pktsitioslibres_rx->estado3;
+					printf("El movil %d ha aparcado en la plaza 3\n", movilAsociado3);										
 				}
 			}
 		}
