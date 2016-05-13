@@ -180,9 +180,14 @@ implementation {
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
 				busy = TRUE;
 				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
-				printParkPlacesState(estado1, ID_plaza1, coorX1, coorY1);
-				printParkPlacesState(estado2, ID_plaza2, coorX2, coorY2);
-				printParkPlacesState(estado3, ID_plaza3, coorX3, coorY3);
+				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
+					printf("Todas las plazas están ocupadas\n");
+					printfflush();
+				}else{
+					printParkPlacesState(estado1, ID_plaza1, coorX1, coorY1);
+					printParkPlacesState(estado2, ID_plaza2, coorX2, coorY2);
+					printParkPlacesState(estado3, ID_plaza3, coorX3, coorY3);
+				}
 				call Leds.led0On();
 				call Leds.led1On();
 				call Leds.led2On();
@@ -198,20 +203,20 @@ implementation {
 			rssi2 = getRssi(msg);		// Obtiene el RSSI
 			// Comprueba el slot que se le ha asignado
 			// 1º slot => Transmitir
-			if (pktmovil_rx->first == nodeID) {
+			if (pktmovil_rx->master == nodeID) {
 				// No espera "nada"
 				call Timer0.startOneShot(1);
 			}
 			// 2º slot => Esperar 1 slot y Transmitir
-			else if (pktmovil_rx->second == nodeID) {
+			else if (pktmovil_rx->first == nodeID) {
 				// Espera 1 slot = Periodo/nº slots
 				call Timer0.startOneShot(pktmovil_rx->Tslot);
 			}
 			// 3º slot => Esperar 2 slots y Transmitir
-			else if (pktmovil_rx->third == nodeID) {
+			else if (pktmovil_rx->second == nodeID) {
 				// Espera 2 slots = 2*Periodo/nº slots
 				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
-			}else if (pktmovil_rx->master == nodeID) {
+			}else if (pktmovil_rx->third == nodeID) {
 				// Espera 3 slots = 3*Periodo/nº slots
 				call Timer0.startOneShot(3*pktmovil_rx->Tslot);
 			}
@@ -228,31 +233,36 @@ implementation {
 					movilAsociado1 = pktsitioslibres_rx->movilAsociado1;
 					estado1 = pktsitioslibres_rx->estado1;
 					printf("El movil %d ha reservado la plaza 1\n", movilAsociado1);
+					printfflush();
 				}else if(pktsitioslibres_rx->estado1 == OCUPADO){
 					movilAsociado1 = pktsitioslibres_rx->movilAsociado1;
 					estado1 = pktsitioslibres_rx->estado1;
-					printf("El movil %d ha aparcado en la plaza 1\n", movilAsociado1);					
+					printf("El movil %d ha aparcado en la plaza 1\n", movilAsociado1);
+					printfflush();					
 				}
 			}else if (pktsitioslibres_rx->movilAsociado2 != NO_MOVIL_ASOCIADO) {
 				if(pktsitioslibres_rx->estado2 == RESERVADO){
 					movilAsociado2 = pktsitioslibres_rx->movilAsociado2;
 					estado2 = pktsitioslibres_rx->estado2;
 					printf("El movil %d ha reservado la plaza 2\n", movilAsociado2);
+					printfflush();
 				}else if(pktsitioslibres_rx->estado2 == OCUPADO){
 					movilAsociado2 = pktsitioslibres_rx->movilAsociado2;
 					estado2 = pktsitioslibres_rx->estado2;
-					printf("El movil %d ha aparcado en la plaza 2\n", movilAsociado2);					
-
+					printf("El movil %d ha aparcado en la plaza 2\n", movilAsociado2);		
+					printfflush();			
 				}
 			}else if (pktsitioslibres_rx->movilAsociado3 != NO_MOVIL_ASOCIADO) {
 				if(pktsitioslibres_rx->estado3 == RESERVADO){
 					movilAsociado3 = pktsitioslibres_rx->movilAsociado3;
 					estado3 = pktsitioslibres_rx->estado3;
 					printf("El movil %d ha reservado la plaza 3\n", movilAsociado3);
+					printfflush();
 				}else if(pktsitioslibres_rx->estado3 == OCUPADO){
 					movilAsociado3 = pktsitioslibres_rx->movilAsociado3;
 					estado3 = pktsitioslibres_rx->estado3;
-					printf("El movil %d ha aparcado en la plaza 3\n", movilAsociado3);										
+					printf("El movil %d ha aparcado en la plaza 3\n", movilAsociado3);
+					printfflush();										
 				}
 			}
 		}

@@ -131,20 +131,20 @@ implementation {
 
 			// Comprueba el slot que se le ha asignado
 			// 1º slot => Transmitir
-			if (pktmovil_rx->first == nodeID) {
+			if (pktmovil_rx->master == nodeID) {
 				// No espera "nada"
 				call Timer0.startOneShot(1);
 			}
 			// 2º slot => Esperar 1 slot y Transmitir
-			else if (pktmovil_rx->second == nodeID) {
+			else if (pktmovil_rx->first == nodeID) {
 				// Espera 1 slot = Periodo/nº slots
 				call Timer0.startOneShot(pktmovil_rx->Tslot);
 			}
 			// 3º slot => Esperar 2 slots y Transmitir
-			else if (pktmovil_rx->third == nodeID) {
+			else if (pktmovil_rx->second == nodeID) {
 				// Espera 2 slots = 2*Periodo/nº slots
 				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
-			}else if (pktmovil_rx->master == nodeID) {
+			}else if (pktmovil_rx->third == nodeID) {
 				// Espera 3 slots = 3*Periodo/nº slots
 				call Timer0.startOneShot(3*pktmovil_rx->Tslot);
 			}
