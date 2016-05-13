@@ -59,13 +59,13 @@ implementation {
 
 		switch (estado){
 			case LIBRE:
-				printf("El estado de la plaza %d con coordenadas (%d,%d) se encuentra libre", ID_plaza, coorX, coorY);
+				printf("La plaza %d con coordenadas (%d,%d) se encuentra libre", ID_plaza, coorX, coorY);
 			break;
 			case RESERVADO:
-				printf("El estado de la plaza %d con coordenadas (%d,%d) se encuentra reservado", ID_plaza, coorX, coorY);
+				printf("La plaza %d con coordenadas (%d,%d) se encuentra reservada", ID_plaza, coorX, coorY);
 			break;
 			case OCUPADO:
-				printf("El estado de la plaza %d con coordenadas (%d,%d) se encuentra ocupado", ID_plaza, coorX, coorY);
+				printf("La plaza %d con coordenadas (%d,%d) se encuentra ocupada", ID_plaza, coorX, coorY);
 			break;
 		}
 
