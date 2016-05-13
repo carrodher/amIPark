@@ -2,7 +2,7 @@
 #define MOVIL_H
 
 enum {
-	TIMER_PERIOD_MILLI 		= 5000,
+	TIMER_PERIOD_MILLI 		= 1000,
 	TIEMPO_ROJO_ENCENDIDO 	= 5000, 	//timer para led rojo encendido si no encuentra aparcamiento libre
 	AM_MOVIL				= 13,
 	MOVIL_ID 				= 130,
@@ -19,21 +19,21 @@ enum {
 	FIJOM_Y					= 0,
 	FIJO1_X					= 0,
 	FIJO1_Y					= 400,
-	FIJO2_X					= 600,
+	FIJO2_X					= 400,
 	FIJO2_Y					= 400,
-	FIJO3_X					= 600,
+	FIJO3_X					= 400,
 	FIJO3_Y					= 0,
 	COORD_APARC_X1			= 100,
 	COORD_APARC_Y1			= 300,
-	COORD_APARC_X2			= 300,
+	COORD_APARC_X2			= 200,
 	COORD_APARC_Y2			= 300,
-	COORD_APARC_X3			= 500,
+	COORD_APARC_X3			= 300,
 	COORD_APARC_Y3			= 300,
 	NO_MOVIL_ASOCIADO		= 0,
 	LIBRE 					= 0,
 	RESERVADO 				= 1,
 	OCUPADO 				= 2,
-	ERROR					= 50
+	ERROR					= 25
 };
 
 
