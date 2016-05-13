@@ -179,7 +179,7 @@ implementation {
 			// Envía
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
 				busy = TRUE;
-				// Enciende los 3 leds cuando envía el paquete largo primero
+				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
 				printParkPlacesState(estado1, ID_plaza1, coorX1, coorY1);
 				printParkPlacesState(estado2, ID_plaza2, coorX2, coorY2);
 				printParkPlacesState(estado3, ID_plaza3, coorX3, coorY3);
@@ -211,6 +211,9 @@ implementation {
 			else if (pktmovil_rx->third == nodeID) {
 				// Espera 2 slots = 2*Periodo/nº slots
 				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
+			}else if (pktmovil_rx->master == nodeID) {
+				// Espera 2 slots = 2*Periodo/nº slots
+				call Timer0.startOneShot(3*pktmovil_rx->Tslot);
 			}
 		}else if (len == sizeof(LlegadaMsg)) {
 			LlegadaMsg* pktllegada_rx = (LlegadaMsg*)payload;	//Extrae el payload

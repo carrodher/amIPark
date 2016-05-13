@@ -144,6 +144,9 @@ implementation {
 			else if (pktmovil_rx->third == nodeID) {
 				// Espera 2 slots = 2*Periodo/nº slots
 				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
+			}else if (pktmovil_rx->master == nodeID) {
+				// Espera 2 slots = 2*Periodo/nº slots
+				call Timer0.startOneShot(3*pktmovil_rx->Tslot);
 			}
 			// En cualquiera de los casos cuando expira el temporizador dirige a "event void Timer0.fired()
 		}
