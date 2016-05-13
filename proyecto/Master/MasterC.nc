@@ -1,4 +1,6 @@
 #include "Master.h"
+#include "printf.h"
+
 
 module MasterC {
 	uses interface Boot;
@@ -51,6 +53,23 @@ implementation {
 			rssi2_t = rssi_t-45;
 		}
 		return rssi2_t;
+	}
+
+	void printParkPlacesState(uint16_t estado, uint16_t ID_plaza, uint16_t coorX, uint16_t coorY){
+
+		switch (estado){
+			case LIBRE:
+				printf("El estado de la plaza %d con coordenadas (%d,%d) se encuentra libre", ID_plaza, coorX, coorY);
+			break;
+			case RESERVADO:
+				printf("El estado de la plaza %d con coordenadas (%d,%d) se encuentra reservado", ID_plaza, coorX, coorY);
+			break;
+			case OCUPADO:
+				printf("El estado de la plaza %d con coordenadas (%d,%d) se encuentra ocupado", ID_plaza, coorX, coorY);
+			break;
+		}
+
+		printfflush();
 	}
 
 
@@ -161,6 +180,9 @@ implementation {
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
 				busy = TRUE;
 				// Enciende los 3 leds cuando envía el paquete largo primero
+				printParkPlacesState(estado1, ID_plaza1, coorX1, coorY1);
+				printParkPlacesState(estado2, ID_plaza2, coorX2, coorY2);
+				printParkPlacesState(estado3, ID_plaza3, coorX3, coorY3);
 				call Leds.led0On();
 				call Leds.led1On();
 				call Leds.led2On();
