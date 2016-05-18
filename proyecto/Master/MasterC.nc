@@ -320,8 +320,6 @@ implementation {
 			// 1º slot => Transmitir
 			if (pktmovil_rx->master == nodeID) {
 				// No espera "nada"
-				printf("Me voy pal Timer0\n");
-				printfflush();
 				call Timer0.startOneShot(1);
 			}
 			// 2º slot => Esperar 1 slot y Transmitir

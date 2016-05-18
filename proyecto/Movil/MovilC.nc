@@ -31,12 +31,15 @@ implementation {
 		// Coordenadas de los nodos fijos
 		uint16_t coorm_x = 0;
 		uint16_t coorm_y = 0;
+
 		uint16_t coor1_x = 0;
-		uint16_t coor1_y = 300;
-		uint16_t coor2_x = 300;
-		uint16_t coor2_y = 300;
-		uint16_t coor3_x = 300;
-		uint16_t coor3_y = 0;
+		uint16_t coor1_y = 200;
+		
+		uint16_t coor2_x = 0;
+		uint16_t coor2_y = 200;
+		
+		uint16_t coor3_x = 200;
+		uint16_t coor3_y = 300;
 
 		// Distancia a nodos fijos Dij
 		float distance_nm = 0;
@@ -248,7 +251,7 @@ implementation {
 			/* Fórmula:
 				X = (wm·xm + w1·x1 + w2·x2 + w3·x3)/(wm + w1 + w2 + w3)
 				Y = (wm·ym + w1·y1 + w2·y2 + w3·y3)/(wm + w1 + w2 + w3) */
-				return (wm* cm + w1*c1 + w3*c3)/(wm + w1 + w3);
+				return (wm* cm + w2*c2 + w3*c3)/(wm + w2 + w3);
 			}
 
 			void sendParkedState(int i){
@@ -510,6 +513,7 @@ implementation {
 						// Borrar este else despues de depurar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 						printf("NO APARCADO!\n");
 						printfflush();
+						sendMsgRSSI();
 					}
 
 					// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
