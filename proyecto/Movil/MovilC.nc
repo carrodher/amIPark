@@ -495,6 +495,7 @@ implementation {
 						call Leds.led1Off();
 						call Leds.led2Off();
 						printf("APARCADO!\n");
+						reserved = FALSE;
 						printfflush();
 					}else{
 						// Borrar este else despues de depurar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -556,8 +557,8 @@ implementation {
 					}
 				}else if (len == sizeof(SitiosLibresMsg)){
 				SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
-				//printf("Recibo sitios libres\n");
-				//printfflush();
+				printf("Recibo sitios libres %d\n", contador_3_mensajes);
+				printfflush();
 				contador_3_mensajes = contador_3_mensajes + 1;
 				if(contador_3_mensajes == 3 && reserved == TRUE){
 					contador_3_mensajes = 0;
@@ -569,7 +570,7 @@ implementation {
 						call Leds.led0On();   	// Led 0 On
 						call Leds.led1Off();   	// Led 1 Off
 						call Leds.led2Off();    // Led 2 Off
-
+						printf("Entra en el 1\n");
 						z = 1;
 						reserved = TRUE;
 
@@ -577,7 +578,7 @@ implementation {
 						call Leds.led0On();   	// Led 0 On
 						call Leds.led1Off();   	// Led 1 Off
 						call Leds.led2Off();    // Led 2 Off
-
+						printf("Entra en el 2\n");
 						z = 2;
 						reserved = TRUE;
 
@@ -586,9 +587,12 @@ implementation {
 						call Leds.led0On();   	// Led 0 On
 						call Leds.led1Off();   	// Led 1 Off
 						call Leds.led2Off();    // Led 2 Off
-
+						printf("Entra en el 3\n");
+						printfflush();
 						z = 3;
 						reserved = TRUE;
+						sendReservedState(z);
+
 
 
 					}else if(reserved == FALSE && contador_3_mensajes == 3){
