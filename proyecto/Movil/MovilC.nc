@@ -59,6 +59,8 @@ implementation {
 
    bool reserved = FALSE;
 
+   uint16_t reserva_rssi = 0;
+
   /* RSSI en función de la distancia: RSSI(D) = a·log(D)+b */
 
 	/* Exponente que modifica la influencia de la distancia en los pesos.
@@ -88,7 +90,7 @@ event void Notify.notify(button_state_t state) {
 					//						|-> Destino = Difusión
 					busy = TRUE;	// Ocupado
 					// Enciende los 3 leds cuando envía el paquete que organiza los slots
-					printf("He llegado al parking, solicito información sobre las plazas\n");
+					printf("He llegado al parking, solicito informacion sobre las plazas\n");
 					printfflush();
 					call Leds.led0On();
 					call Leds.led1On();
@@ -146,13 +148,16 @@ event void Notify.notify(button_state_t state) {
 		pktmovil_tx->third = third;
 		// Campo 6: Último slot siempre para el movil
 		pktmovil_tx->fourth = fourth;
+					printf("He entrado en el parking, solicito localizacionnnnnnnn\n");
+
 
 		// Envía
 		if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MovilMsg)) == SUCCESS) {
 			//						|-> Destino = Difusión
+			reserva_rssi = 0;
 			busy = TRUE;
 			// Enciende los 3 leds cuando envía el paquete que organiza los slots
-			printf("He entrado en el parking, solicito localizacón\n");
+			printf("He entrado en el parking, solicito localizacion\n");
 			printfflush();
 			call Leds.led0On();
 			call Leds.led1On();
@@ -165,6 +170,10 @@ event void Notify.notify(button_state_t state) {
 		if (&pkt == msg) {
 			busy = FALSE;	// Libre
 		}
+		if(reserva_rssi == 1){
+			sendMsgRSSI();
+		}
+
 	}
 
 	//Funcion que enciende y apaga luz durante un tiempo determinado
@@ -223,7 +232,7 @@ event void Notify.notify(button_state_t state) {
 		/* Fórmula:
 			X = (wm·xm + w1·x1 + w2·x2 + w3·x3)/(wm + w1 + w2 + w3)
 			Y = (wm·ym + w1·y1 + w2·y2 + w3·y3)/(wm + w1 + w2 + w3) */
-		return (wm* cm + w1*c1 + w2*c2 + w3*c3)/(wm + w1 + w2 + w3);
+		return (wm* cm + w3*c3)/(wm + w3);
 	}
 
 	void sendParkedState(int i){
@@ -317,9 +326,10 @@ event void Notify.notify(button_state_t state) {
 				busy = TRUE;	// Ocupado
 				printf("Mando el mensaje de reserva\n");
 				printfflush();
+				reserva_rssi = 1;
 			}
 			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-			sendMsgRSSI();
+			//sendMsgRSSI();
 		}else if(i == 2){
 			// Reserva memoria para el paquete
 			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
@@ -369,15 +379,21 @@ event void Notify.notify(button_state_t state) {
 			call Leds.led0Off();   	// Led 0 Off
 			call Leds.led1Off();   	// Led 1 Off
 			call Leds.led2Off();    // Led 2 Off
+			printf("\nME LLEGA UN PUTO MENSAJE\n");
+			printf("Longitud fijo mensaje %d y el tamanio del fijo es %d\n\n",len, sizeof(FijoMsg));
+			printfflush();
 
 		if (len == sizeof(FijoMsg)) {
 			FijoMsg* pktfijo_rx = (FijoMsg*)payload;		// Extrae el payload
+			printf("Me llega un mensaje fijo con id %d\n", pktfijo_rx->ID_fijo);
+			printfflush();
 
 			// Determina el emisor del mensaje recibido
 			if (pktfijo_rx->ID_fijo == MASTER_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
 				// Enciende los leds para notificar la llegada de un paquete
 				turnOnLeds(pktfijo_rx->ID_fijo);
-
+				printf("He recibido rssi del nodo master\n");
+				printfflush();
 				rssi = pktfijo_rx->medidaRssi;
 				// Calcula la distancia al nodo master en base al RSSI
 				distance_nm = getDistance(rssi);
@@ -387,7 +403,8 @@ event void Notify.notify(button_state_t state) {
 			else if (pktfijo_rx->ID_fijo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
 				// Enciende los leds para notificar la llegada de un paquete
 				turnOnLeds(pktfijo_rx->ID_fijo);
-
+				printf("He recibido rssi del nodo 1\n");
+				printfflush();
 				rssi = pktfijo_rx->medidaRssi;
 				// Calcula la distancia al nodo 1 en base al RSSI
 				distance_n1 = getDistance(rssi);
@@ -397,7 +414,8 @@ event void Notify.notify(button_state_t state) {
 			else if (pktfijo_rx->ID_fijo == FIJO2_ID) {		//Nos ha llegado un paquete del nodo fijo 2
 				// Enciende los leds para notificar la llegada de un paquete
 				turnOnLeds(pktfijo_rx->ID_fijo);
-
+				printf("He recibido rssi del nodo 2\n");
+				printfflush();
 				rssi = pktfijo_rx->medidaRssi;
 				// Calcula la distancia al nodo 2 en base al RSSI
 				distance_n2 = getDistance(rssi);
@@ -407,7 +425,8 @@ event void Notify.notify(button_state_t state) {
 			else if (pktfijo_rx->ID_fijo == FIJO3_ID) {		//Nos ha llegado un paquete del nodo fijo 3
 				// Enciende los leds para notificar la llegada de un paquete
 				turnOnLeds(pktfijo_rx->ID_fijo);
-
+				printf("He recibido rssi del nodo 3\n");
+				printfflush();
 				rssi = pktfijo_rx->medidaRssi;
 				// Calcula la distancia al nodo 3 en base al RSSI
 				distance_n3 = getDistance(rssi);
@@ -485,6 +504,8 @@ event void Notify.notify(button_state_t state) {
 			}
 		}else if (len == sizeof(SitiosLibresMsg)){
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
+			printf("Recibo sitios libres\n");
+			printfflush();
 
 			if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC1_ID && reserved == FALSE){
 				// Enciende led verde para notificar hueco libre encontrado
