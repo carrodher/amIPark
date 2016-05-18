@@ -23,12 +23,18 @@ enum {
 	FIJO2_Y					= 300,
 	FIJO3_X					= 300,
 	FIJO3_Y					= 0,
-	COORD_APARC_X1			= 50,
+	/*COORD_APARC_X1		= 50,
 	COORD_APARC_Y1			= 250,
 	COORD_APARC_X2			= 150,
 	COORD_APARC_Y2			= 250,
 	COORD_APARC_X3			= 250,
-	COORD_APARC_Y3			= 250,
+	COORD_APARC_Y3			= 250,*/
+	COORD_APARC_X1			= 50,
+	COORD_APARC_Y1			= 0,
+	COORD_APARC_X2			= 150,
+	COORD_APARC_Y2			= 0,
+	COORD_APARC_X3			= 250,
+	COORD_APARC_Y3			= 0,
 	NO_MOVIL_ASOCIADO		= 0,
 	LIBRE 					= 0,
 	RESERVADO 				= 1,
@@ -61,6 +67,7 @@ typedef nx_struct LocationMsg {
     nx_uint16_t distance1;
     nx_uint16_t distance2;
     nx_uint16_t distance3;
+    nx_bool location;
 } LocationMsg;
 
 typedef nx_struct LlegadaMsg {
