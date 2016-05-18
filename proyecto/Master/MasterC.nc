@@ -39,6 +39,8 @@ implementation {
 	uint16_t movilAsociado3 = NO_MOVIL_ASOCIADO;	//ID del movil que esta aparcado o quiere aparcarse
 	uint16_t estado3  = LIBRE;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
 	uint16_t num_plazas = 3;
+	
+	uint16_t manda3mensajes = 0;
 
 	// Obtiene el valor RSSI del paquete recibido
 	int16_t getRssi(message_t *msg){
@@ -144,14 +146,7 @@ implementation {
 	}
 
 
-	// Comprueba la tx del pkt y marca como libre si ha terminado
-	event void AMSend.sendDone(message_t* msg, error_t err) {
-		if (&pkt == msg) {
-			busy = FALSE;	// Libre
-		}
-	}
-
-	void sendParkPlaces1(){
+void sendParkPlaces1(){
 		SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 			// Reserva errónea
 			if (pktsitioslibres_tx == NULL) {
@@ -164,28 +159,31 @@ implementation {
 			pktsitioslibres_tx->coorY = coorY1;
 			pktsitioslibres_tx->movilAsociado = movilAsociado1;
 			pktsitioslibres_tx->estado = estado1;
-			pktsitioslibres_tx->num_plazas = num_plazas
+			pktsitioslibres_tx->num_plazas = num_plazas;
 
 			
 			// Envía
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
+				manda3mensajes = 1;
 				busy = TRUE;
 				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
 				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
 					printf("Todas las plazas están ocupadas\n");
 					printfflush();
 				}else{
-					printParkPlacesState(estado1, ID_plaza1, coorX1, coorY1);
+					printParkPlacesState(estado1, 1, coorX1, coorY1);
 
 				}
 				call Leds.led0On();
 				call Leds.led1On();
 				call Leds.led2On();
+				
 			}
 	}
 	void sendParkPlaces2(){
 		SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 			// Reserva errónea
+		
 			if (pktsitioslibres_tx == NULL) {
 				return;
 			}
@@ -197,21 +195,22 @@ implementation {
 			pktsitioslibres_tx->coorY = coorY2;
 			pktsitioslibres_tx->movilAsociado = movilAsociado2;
 			pktsitioslibres_tx->estado = estado2;
-			pktsitioslibres_tx->num_plazas = num_plazas
-
+			pktsitioslibres_tx->num_plazas = num_plazas;
 
 
 			
 			// Envía
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
+				manda3mensajes = 2;
 				busy = TRUE;
+
 				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
 				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
 					printf("\n");
 					printfflush();
 				}else{
 					
-					printParkPlacesState(estado2, ID_plaza2, coorX2, coorY2);
+					printParkPlacesState(estado2, 2, coorX2, coorY2);
 				}
 				call Leds.led0On();
 				call Leds.led1On();
@@ -232,24 +231,42 @@ implementation {
 			pktsitioslibres_tx->coorY = coorY3;
 			pktsitioslibres_tx->movilAsociado = movilAsociado3;
 			pktsitioslibres_tx->estado = estado3;
-			pktsitioslibres_tx->num_plazas = num_plazas
+			pktsitioslibres_tx->num_plazas = num_plazas;
 
 			
 			// Envía
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
+				manda3mensajes = 3;
 				busy = TRUE;
 				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
 				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
 					printf("\n");
 					printfflush();
 				}else{
-					printParkPlacesState(estado3, ID_plaza3, coorX3, coorY3);
+					printParkPlacesState(estado3, 3, coorX3, coorY3);
 				}
 				call Leds.led0On();
 				call Leds.led1On();
 				call Leds.led2On();
 			}
 	}
+
+	// Comprueba la tx del pkt y marca como libre si ha terminado
+	event void AMSend.sendDone(message_t* msg, error_t err) {
+		if (&pkt == msg) {
+			busy = FALSE;	// Libre
+
+		}
+		
+		if(manda3mensajes == 1){
+			sendParkPlaces2();
+		}else if (manda3mensajes == 2){
+			sendParkPlaces3();
+		}
+
+	}
+
+	
 
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
 		// Si el paquete tiene la longitud de un paquete que pide el RSSI y es del nodo móvil
@@ -282,11 +299,14 @@ implementation {
 			/* si hubiese que comprobarse algo del mensaje de hola que tal se haria aqui */ 
 
 			sendParkPlaces1();
-			sendParkPlaces2();
-			sendParkPlaces3();
+			
+			//sendParkPlaces2();
+			//sendParkPlaces3();
 
 		}else if (len == sizeof (SitiosLibresMsg)) {
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;	//Extrae el payload
+			printf("LLEGAMOS AQUI CON ESTADO: %d MOVIL ASOCIADO %d ID_plaza %d \n", pktsitioslibres_rx->estado, pktsitioslibres_rx->movilAsociado, pktsitioslibres_rx->ID_plaza);
+			printfflush();
 			if (pktsitioslibres_rx->movilAsociado != NO_MOVIL_ASOCIADO && pktsitioslibres_rx->ID_plaza == APARC1_ID) {
 				if(pktsitioslibres_rx->estado == RESERVADO ){
 					movilAsociado1 = pktsitioslibres_rx->movilAsociado;
