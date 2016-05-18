@@ -25,7 +25,8 @@ implementation {
 	uint16_t fourth = MOVIL_ID; 		// 5º slot: id movil
 	message_t pkt;        				// Espacio para el pkt a tx
 	bool busy = FALSE;    				// Flag para comprobar el estado de la radio
-
+	uint16_t contador_3_mensajes= 0;
+	uint16_t localizacion = 0;
 
 	// Coordenadas de los nodos fijos
 	uint16_t coorm_x = 0;
@@ -60,6 +61,8 @@ implementation {
    bool reserved = FALSE;
 
    uint16_t reserva_rssi = 0;
+   
+   uint16_t z = 0;
 
   /* RSSI en función de la distancia: RSSI(D) = a·log(D)+b */
 
@@ -148,17 +151,17 @@ event void Notify.notify(button_state_t state) {
 		pktmovil_tx->third = third;
 		// Campo 6: Último slot siempre para el movil
 		pktmovil_tx->fourth = fourth;
-					printf("He entrado en el parking, solicito localizacionnnnnnnn\n");
 
+		reserva_rssi = 0;
 
 		// Envía
 		if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MovilMsg)) == SUCCESS) {
 			//						|-> Destino = Difusión
-			reserva_rssi = 0;
+			printf("QUIERO LOCALIZACION\n");
+			localizacion = 1;
+			printfflush();
 			busy = TRUE;
 			// Enciende los 3 leds cuando envía el paquete que organiza los slots
-			printf("He entrado en el parking, solicito localizacion\n");
-			printfflush();
 			call Leds.led0On();
 			call Leds.led1On();
 			call Leds.led2On();
@@ -172,6 +175,12 @@ event void Notify.notify(button_state_t state) {
 		}
 		if(reserva_rssi == 1){
 			sendMsgRSSI();
+			reserva_rssi=0;
+		}
+		if(localizacion == 1){
+			printf("Se ha terminado de mandar el mensaje de localizacion\n");
+			printfflush();
+			localizacion=0;
 		}
 
 	}
@@ -296,18 +305,18 @@ event void Notify.notify(button_state_t state) {
 
 	bool am_i_parked(uint16_t movilXr, uint16_t movilYr){
 		bool parked = FALSE;
-		int i;
+		uint16_t j = 0;
 		if(movilXr <= (COORD_APARC_X1+50) && movilXr >= (COORD_APARC_X1-50) && movilYr <= (COORD_APARC_Y1+50) && movilYr >= (COORD_APARC_Y1-50)){
-			i = 1;
-			sendParkedState(i);
+			j = 1;
+			sendParkedState(j);
 			parked = TRUE;
 		}else if(movilXr <= (COORD_APARC_X2+50) && movilXr >= (COORD_APARC_X2-50) && movilYr <= (COORD_APARC_Y2+50) && movilYr >= (COORD_APARC_Y2-50)){
-			i = 2;
-			sendParkedState(i);
+			j = 2;
+			sendParkedState(j);
 			parked = TRUE;
 		}else if(movilXr <= (COORD_APARC_X3+50) && movilXr >= (COORD_APARC_X3-50) && movilYr <= (COORD_APARC_Y3+50) && movilYr >= (COORD_APARC_Y3-50)){
-			i = 3;
-			sendParkedState(i);
+			j = 3;
+			sendParkedState(j);
 			parked = TRUE;
 		}
 		return parked;
@@ -315,8 +324,8 @@ event void Notify.notify(button_state_t state) {
 
 	void sendReservedState (int i){
 
-		printf("He reservado la plaza %d con ID %d \n",i, APARC1_ID);
-		printfflush();
+		//printf("He reservado la plaza %d con ID %d \n",i, APARC1_ID);
+		//printfflush();
 
 		if (i == 1){
 			// Reserva memoria para el paquete
@@ -358,9 +367,10 @@ event void Notify.notify(button_state_t state) {
 				busy = TRUE;	// Ocupado
 				printf("Mando el mensaje de reserva\n");
 				printfflush();
+     			reserva_rssi = 1;
 			}
 			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-			sendMsgRSSI();
+			//sendMsgRSSI();
 
 		}else if(i == 3){
 			// Reserva memoria para el paquete
@@ -380,22 +390,23 @@ event void Notify.notify(button_state_t state) {
 				busy = TRUE;	// Ocupado
 				printf("Mando el mensaje de reserva\n");
 				printfflush();
+				reserva_rssi = 1;
 			}
 			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-			sendMsgRSSI();
+			//sendMsgRSSI();
 		}
 	}
 
 // Recibe un mensaje de cualquiera de los nodos fijos, el primer mensaje tiene que ser del master
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
-			int i;
+			
 			bool parked2 = FALSE;
 
 			call Leds.led0Off();   	// Led 0 Off
 			call Leds.led1Off();   	// Led 1 Off
 			call Leds.led2Off();    // Led 2 Off
-			printf("\nME LLEGA UN PUTO MENSAJE\n");
-			printf("Longitud mensaje %d y el tamanio del fijo es %d\n\n",len, sizeof(FijoMsg));
+
+			printf("\nRecibido: %d\n", len);
 			printfflush();
 
 		if (len == sizeof(FijoMsg)) {
@@ -519,48 +530,57 @@ event void Notify.notify(button_state_t state) {
 			}
 		}else if (len == sizeof(SitiosLibresMsg)){
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
-			printf("Recibo sitios libres\n");
+			//printf("Recibo sitios libres\n");
+			//printfflush();
+			contador_3_mensajes = contador_3_mensajes + 1;
+			printf("He entrado %d veces, reserved es: %d\n y la z:%d", contador_3_mensajes, reserved, z);
 			printfflush();
-
-			if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC1_ID && reserved == FALSE){
-				// Enciende led verde para notificar hueco libre encontrado
-				call Leds.led0On();   	// Led 0 On
-				call Leds.led1Off();   	// Led 1 Off
-				call Leds.led2Off();    // Led 2 Off
-
-				i = 1;
-				reserved = TRUE;
-				sendReservedState(i);
-
-			}else if (pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC2_ID && reserved == FALSE){
-				call Leds.led0On();   	// Led 0 On
-				call Leds.led1Off();   	// Led 1 Off
-				call Leds.led2Off();    // Led 2 Off
-
-				i = 2;
-				reserved = TRUE;
-				sendReservedState(i);
-
-			}else if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC3_ID && reserved == FALSE){
-				call Leds.led0On();   	// Led 0 On
-				call Leds.led1Off();   	// Led 1 Off
-				call Leds.led2Off();    // Led 2 Off
-
-				i = 3;
-				reserved = TRUE;
-				sendReservedState(i);
-
-			}else if(reserved == FALSE){
-				// Enciende led rojo para notificar no hueco libre encontrado
-				call Leds.led0Off();   	// Led 0 Off
-				call Leds.led1On();   	// Led 1 On
-				call Leds.led2Off();    // Led 2 Off
-				printf("No hay hueco libre \n");
+			if(contador_3_mensajes == 3 && reserved == TRUE){
+				printf("Entra en reserved?\n");
 				printfflush();
-				call TimerLedRojo.startOneShot(TIEMPO_ROJO_ENCENDIDO);
+				contador_3_mensajes = 0;
+				sendReservedState(z);
 			}else{
-				printf("Aparcando...\n");
-				printfflush();
+
+				if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC1_ID && reserved == FALSE){
+					// Enciende led verde para notificar hueco libre encontrado
+					call Leds.led0On();   	// Led 0 On
+					call Leds.led1Off();   	// Led 1 Off
+					call Leds.led2Off();    // Led 2 Off
+
+					z = 1;
+					reserved = TRUE;
+
+				}else if (pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC2_ID && reserved == FALSE){
+					call Leds.led0On();   	// Led 0 On
+					call Leds.led1Off();   	// Led 1 Off
+					call Leds.led2Off();    // Led 2 Off
+
+					z = 2;
+					reserved = TRUE;
+				
+
+				}else if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC3_ID && reserved == FALSE){
+					call Leds.led0On();   	// Led 0 On
+					call Leds.led1Off();   	// Led 1 Off
+					call Leds.led2Off();    // Led 2 Off
+
+					z = 3;
+					reserved = TRUE;
+			
+
+				}else if(reserved == FALSE){
+					// Enciende led rojo para notificar no hueco libre encontrado
+					call Leds.led0Off();   	// Led 0 Off
+					call Leds.led1On();   	// Led 1 On
+					call Leds.led2Off();    // Led 2 Off
+					printf("No hay hueco libre \n");
+					printfflush();
+					call TimerLedRojo.startOneShot(TIEMPO_ROJO_ENCENDIDO);
+				}else{
+					printf("Aparcando...\n");
+					printfflush();
+				}
 			}
 		}
 		return msg;
