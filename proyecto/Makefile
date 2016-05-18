@@ -1,2 +1,2 @@
-COMPONENT=MasterAppC
+COMPONENT=TestUserButtonAppC
 include $(MAKERULES)
