@@ -80,8 +80,8 @@ implementation {
 	// Se ejecuta al alimentar t-mote. Arranca la radio
 	event void Boot.booted() {
 		call AMControl.start();
-    // Obtenemos el ID de este nodo
-    nodeID = 134;
+    	// Obtenemos el ID de este nodo
+    	nodeID = TOS_NODE_ID;
 	}
 
 
@@ -161,7 +161,8 @@ implementation {
 
 
 	void sendParkPlaces1(){
-		SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+		if(!busy){
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 			// Reserva errónea
 			if (pktsitioslibres_tx == NULL) {
 				return;
@@ -175,9 +176,11 @@ implementation {
 			pktsitioslibres_tx->estado = estado1;
 			
 			// Envía
-			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
+			if (call AMSend.send(MOVIL_ID, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
 				manda3mensajes = 1;
 				busy = TRUE;
+				printf("id= %d\n", nodeID);
+    			printfflush();
 				printf("Envio SitiosLibresMsg 1\n");
 				printfflush();
 				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
@@ -193,9 +196,11 @@ implementation {
 				call Leds.led2On();
 				
 			}
+		}
 	}
 	void sendParkPlaces2(){
-		SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+		if(!busy){
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 			// Reserva errónea
 		
 			if (pktsitioslibres_tx == NULL) {
@@ -229,9 +234,14 @@ implementation {
 				call Leds.led1On();
 				call Leds.led2On();
 			}
+		}else{
+			printf("HOLA JUAPI\n");
+			printfflush();
+		}	
 	}
 	void sendParkPlaces3(){
-		SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+		if(!busy){
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 			// Reserva errónea
 			if (pktsitioslibres_tx == NULL) {
 				return;
@@ -262,6 +272,10 @@ implementation {
 				call Leds.led1On();
 				call Leds.led2On();
 			}
+		}else{
+			printf("HOLA JUAPI\n");
+			printfflush();
+		}	
 	}
 
 	// Comprueba la tx del pkt y marca como libre si ha terminado

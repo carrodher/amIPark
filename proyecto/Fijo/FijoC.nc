@@ -43,8 +43,8 @@ implementation {
 	event void Boot.booted() {
 		call AMControl.start();
     
-    // Obtenemos el ID de este nodo
-    nodeID = TOS_NODE_ID;
+    	// Obtenemos el ID de este nodo
+    	nodeID = TOS_NODE_ID;
 	}
 
 
