@@ -29,17 +29,17 @@ implementation {
 		uint16_t localizacion = 0;
 
 		// Coordenadas de los nodos fijos
-		uint16_t coorm_x = 0;
-		uint16_t coorm_y = 0;
+		uint16_t coorm_x = FIJOM_X;
+		uint16_t coorm_y = FIJOM_Y;
 
-		uint16_t coor1_x = 0;
-		uint16_t coor1_y = 200;
+		uint16_t coor1_x = FIJO1_X;
+		uint16_t coor1_y = FIJO1_Y;
 		
-		uint16_t coor2_x = 0;
-		uint16_t coor2_y = 200;
+		uint16_t coor2_x = FIJO2_X;
+		uint16_t coor2_y = FIJO2_Y;
 		
-		uint16_t coor3_x = 200;
-		uint16_t coor3_y = 300;
+		uint16_t coor3_x = FIJO3_X;
+		uint16_t coor3_y = FIJO3_Y;
 
 		// Distancia a nodos fijos Dij
 		float distance_nm = 0;
@@ -166,9 +166,7 @@ implementation {
 				// Envía
 				if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MovilMsg)) == SUCCESS) {
 					//						|-> Destino = Difusión
-					printf("QUIERO LOCALIZACION\n");
 					localizacion = 1;
-					printfflush();
 					busy = TRUE;
 					// Enciende los 3 leds cuando envía el paquete que organiza los slots
 					call Leds.led0On();
@@ -188,8 +186,6 @@ implementation {
 				reserva_rssi=0;
 			}
 			if(localizacion == 1){
-				printf("Se ha terminado de mandar el mensaje de localizacion\n");
-				printfflush();
 				localizacion=0;
 			}
 
@@ -328,15 +324,15 @@ implementation {
 		bool am_i_parked(uint16_t movilXr, uint16_t movilYr){
 			bool parked = FALSE;
 			uint16_t j = 0;
-			if(movilXr <= (COORD_APARC_X1+50) && movilXr >= (COORD_APARC_X1-50) && movilYr <= (COORD_APARC_Y1+50) && movilYr >= (COORD_APARC_Y1-50)){
+			if(movilXr <= (COORD_APARC_X1+20) && movilXr >= (COORD_APARC_X1-20) && movilYr <= (COORD_APARC_Y1+20) && movilYr >= (COORD_APARC_Y1-20)){
 				j = 1;
 				sendParkedState(j);
 				parked = TRUE;
-			}else if(movilXr <= (COORD_APARC_X2+50) && movilXr >= (COORD_APARC_X2-50) && movilYr <= (COORD_APARC_Y2+50) && movilYr >= (COORD_APARC_Y2-50)){
+			}else if(movilXr <= (COORD_APARC_X2+20) && movilXr >= (COORD_APARC_X2-20) && movilYr <= (COORD_APARC_Y2+20) && movilYr >= (COORD_APARC_Y2-20)){
 				j = 2;
 				sendParkedState(j);
 				parked = TRUE;
-			}else if(movilXr <= (COORD_APARC_X3+50) && movilXr >= (COORD_APARC_X3-50) && movilYr <= (COORD_APARC_Y3+50) && movilYr >= (COORD_APARC_Y3-50)){
+			}else if(movilXr <= (COORD_APARC_X3+20) && movilXr >= (COORD_APARC_X3-20) && movilYr <= (COORD_APARC_Y3+20) && movilYr >= (COORD_APARC_Y3-20)){
 				j = 3;
 				sendParkedState(j);
 				parked = TRUE;
@@ -368,8 +364,6 @@ implementation {
 					//Envía
 					if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
 						busy = TRUE;	// Ocupado
-						printf("Mando el mensaje de reserva\n");
-						printfflush();
 						reserva_rssi = 1;
 					}
 				}
@@ -393,8 +387,6 @@ implementation {
 					//Envía
 					if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
 						busy = TRUE;	// Ocupado
-						printf("Mando el mensaje de reserva\n");
-						printfflush();
 						reserva_rssi = 1;
 					}
 				}
@@ -420,8 +412,6 @@ implementation {
 				//Envía
 					if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
 						busy = TRUE;	// Ocupado
-						printf("Mando el mensaje de reserva\n");
-						printfflush();
 						reserva_rssi = 1;
 					}
 				//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
@@ -438,9 +428,6 @@ implementation {
 				call Leds.led0Off();   	// Led 0 Off
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
-
-				printf("\nRecibido: %d\n", len);
-				printfflush();
 
 				if (len == sizeof(FijoMsg)) {
 				FijoMsg* pktfijo_rx = (FijoMsg*)payload;		// Extrae el payload
@@ -572,11 +559,7 @@ implementation {
 				//printf("Recibo sitios libres\n");
 				//printfflush();
 				contador_3_mensajes = contador_3_mensajes + 1;
-				printf("He entrado %d veces, reserved es: %d\n y la z:%d", contador_3_mensajes, reserved, z);
-				printfflush();
 				if(contador_3_mensajes == 3 && reserved == TRUE){
-					printf("Entra en reserved?\n");
-					printfflush();
 					contador_3_mensajes = 0;
 					sendReservedState(z);
 				}else{
@@ -608,7 +591,7 @@ implementation {
 						reserved = TRUE;
 
 
-					}else if(reserved == FALSE){
+					}else if(reserved == FALSE && contador_3_mensajes == 3){
 						// Enciende led rojo para notificar no hueco libre encontrado
 						call Leds.led0Off();   	// Led 0 Off
 						call Leds.led1On();   	// Led 1 On

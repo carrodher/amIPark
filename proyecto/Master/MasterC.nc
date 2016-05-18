@@ -100,16 +100,12 @@ implementation {
 	// Cuando salta el temporizador se envia el mensaje
 	event void Timer0.fired() {
 		// Si no está ocupado forma y envía el mensaje
-		printf("Estoy en Timer0\n");
-		printfflush();
 		if (!busy) {
 			// Reserva memoria para el paquete
 			FijoMsg* pktfijo_tx = (FijoMsg*)(call Packet.getPayload(&pkt, sizeof(FijoMsg)));
 
 			// Reserva errónea
 			if (pktfijo_tx == NULL) {
-				printf("Reserva de FijoMsg erronea\n");
-				printfflush();
 				return;
 			}
 
@@ -143,11 +139,6 @@ implementation {
 			// Envía
 			if (call AMSend.send(MOVIL_ID, &pkt, sizeof(FijoMsg)) == SUCCESS) {
 				//					|-> Destino = Móvil
-				printf("FijoMsg mandado con SUCCESS a %d tamanio %d\n", MOVIL_ID, sizeof(FijoMsg));
-				printfflush();
-				printf("Busy: %d\n", busy);
-				printfflush();
-				adios = 1;
 				busy = TRUE;	// Ocupado
 				call Leds.led0Off();   // Led 0 Off
 				call Leds.led1On();    // Led 1 ON cuando envío mi paquete
@@ -179,10 +170,6 @@ implementation {
 			if (call AMSend.send(MOVIL_ID, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
 				manda3mensajes = 1;
 				busy = TRUE;
-				printf("id= %d\n", nodeID);
-    			printfflush();
-				printf("Envio SitiosLibresMsg 1\n");
-				printfflush();
 				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
 				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
 					printf("Todas las plazas están ocupadas\n");
@@ -220,11 +207,9 @@ implementation {
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
 				manda3mensajes = 2;
 				busy = TRUE;
-				printf("Envio SitiosLibresMsg 2\n");
-				printfflush();
 				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
 				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
-					printf("\n");
+					printf("Todas las plazas estan ocupadas\n");
 					printfflush();
 				}else{
 					
@@ -235,7 +220,7 @@ implementation {
 				call Leds.led2On();
 			}
 		}else{
-			printf("HOLA JUAPI\n");
+			printf("Canal busy para mandar sendParkPlaces2\n");
 			printfflush();
 		}	
 	}
@@ -259,11 +244,9 @@ implementation {
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
 				manda3mensajes = 3;
 				busy = TRUE;
-				printf("Envio SitiosLibresMsg 3\n");
-				printfflush();
 				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
 				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
-					printf("\n");
+					printf("Todas las plazas estan ocupadas\n");
 					printfflush();
 				}else{
 					printParkPlacesState(estado3, 3, coorX3, coorY3);
@@ -273,7 +256,7 @@ implementation {
 				call Leds.led2On();
 			}
 		}else{
-			printf("HOLA JUAPI\n");
+			printf("Canal busy para mandar sendParkPlaces3\n");
 			printfflush();
 		}	
 	}
@@ -290,14 +273,6 @@ implementation {
 			sendParkPlaces3();
 		}else if (manda3mensajes == 3){
 			manda3mensajes = 0;
-			printf("Se han mandado las tres plazas\n");
-			printfflush();
-		}
-
-		if(adios == 1){
-			printf("Se ha mandado el fijo\n");
-			printfflush();
-			adios = 0;
 		}
 
 	}
@@ -306,12 +281,8 @@ implementation {
 
 	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
 		// Si el paquete tiene la longitud de un paquete que pide el RSSI y es del nodo móvil
-		printf("Mensaje recibido de longitud %d\n", len);
-		printfflush();
 		if (len == sizeof(MovilMsg)) {
 			MovilMsg* pktmovil_rx = (MovilMsg*)payload;		// Extrae el payload
-			printf("El nodo %d me esta pidiendo el RSSI\n", pktmovil_rx->ID_movil);
-			printfflush();
 			call Leds.led0On();    // Led 0 ON cuando me llega el paquete del móvil
 			call Leds.led1Off();   // Led 1 OFF
 			call Leds.led2Off();
@@ -325,27 +296,19 @@ implementation {
 			// 2º slot => Esperar 1 slot y Transmitir
 			else if (pktmovil_rx->first == nodeID) {
 				// Espera 1 slot = Periodo/nº slots
-				printf("Me voy pal Timer0\n");
-				printfflush();
 				call Timer0.startOneShot(pktmovil_rx->Tslot);
 			}
 			// 3º slot => Esperar 2 slots y Transmitir
 			else if (pktmovil_rx->second == nodeID) {
 				// Espera 2 slots = 2*Periodo/nº slots
-				printf("Me voy pal Timer0\n");
-				printfflush();
 				call Timer0.startOneShot(2*pktmovil_rx->Tslot);
 			}else if (pktmovil_rx->third == nodeID) {
 				// Espera 3 slots = 3*Periodo/nº slots
-				printf("Me voy pal Timer0\n");
-				printfflush();
 				call Timer0.startOneShot(3*pktmovil_rx->Tslot);
 			}
 		}else if (len == sizeof(LlegadaMsg)) {
 			LlegadaMsg* pktllegada_rx = (LlegadaMsg*)payload;	//Extrae el payload
 			/* si hubiese que comprobarse algo del mensaje de hola que tal se haria aqui */ 
-			printf("Me voy pal sendParkPlaces1\n");
-			printfflush();
 			sendParkPlaces1();
 			
 			//sendParkPlaces2();
@@ -353,8 +316,6 @@ implementation {
 
 		}else if (len == sizeof (SitiosLibresMsg)) {
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;	//Extrae el payload
-			//printf("LLEGAMOS AQUI CON ESTADO: %d MOVIL ASOCIADO %d ID_plaza %d \n", pktsitioslibres_rx->estado, pktsitioslibres_rx->movilAsociado, pktsitioslibres_rx->ID_plaza);
-			//printfflush();
 			if (pktsitioslibres_rx->movilAsociado != NO_MOVIL_ASOCIADO && pktsitioslibres_rx->ID_plaza == APARC1_ID) {
 				if(pktsitioslibres_rx->estado == RESERVADO ){
 					movilAsociado1 = pktsitioslibres_rx->movilAsociado;
