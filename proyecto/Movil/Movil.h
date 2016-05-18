@@ -67,6 +67,8 @@ typedef nx_struct LocationMsg {
     nx_uint16_t distance1;
     nx_uint16_t distance2;
     nx_uint16_t distance3;
+	nx_bool location;
+
 } LocationMsg;
 
 typedef nx_struct LlegadaMsg {
@@ -80,7 +82,6 @@ typedef nx_struct SitiosLibresMsg {
 	nx_uint16_t coorY;
 	nx_uint16_t movilAsociado;	//ID del movil que esta aparcado o quiere aparcarse
 	nx_uint16_t estado;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
-	nx_uint16_t num_plazas;
 }SitiosLibresMsg;
 
 

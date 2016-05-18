@@ -380,7 +380,7 @@ event void Notify.notify(button_state_t state) {
 			call Leds.led1Off();   	// Led 1 Off
 			call Leds.led2Off();    // Led 2 Off
 			printf("\nME LLEGA UN PUTO MENSAJE\n");
-			printf("Longitud fijo mensaje %d y el tamanio del fijo es %d\n\n",len, sizeof(FijoMsg));
+			printf("Longitud mensaje %d y el tamanio del fijo es %d\n\n",len, sizeof(FijoMsg));
 			printfflush();
 
 		if (len == sizeof(FijoMsg)) {
@@ -478,7 +478,7 @@ event void Notify.notify(button_state_t state) {
 	        	  	pktmovil_loc->distance1 = (uint16_t) distance_n1;
     		      	pktmovil_loc->distance2 = (uint16_t) distance_n2;
         			pktmovil_loc->distance3 = (uint16_t) distance_n3;
-
+        			pktmovil_loc->location= TRUE;
 
 					// Envía
 					if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LocationMsg)) == SUCCESS) {
