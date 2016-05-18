@@ -217,29 +217,15 @@ implementation {
 		printf("He aparcado en la plaza %d \n",i);
 		printfflush();
 		
-		if(i == 0){
+		if(i == 1){
 			// Reserva memoria para el paquete
 			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 			// Reserva errónea
 			if (pktsitioslibres_tx == NULL) {
 				return;
 			}
-			pktsitioslibres_tx->movilAsociado1 = MOVIL_ID;
-			pktsitioslibres_tx->estado1 = OCUPADO;
-			//Envía
-			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-				busy = TRUE;	// Ocupado
-			}
-		}else if(i == 1){
-			// Reserva memoria para el paquete
-			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-			// Reserva errónea
-			if (pktsitioslibres_tx == NULL) {
-				return;
-			}
-			pktsitioslibres_tx->movilAsociado2 = MOVIL_ID;
-			pktsitioslibres_tx->estado2 = OCUPADO;
-
+			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+			pktsitioslibres_tx->estado = OCUPADO;
 			//Envía
 			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
 				busy = TRUE;	// Ocupado
@@ -251,8 +237,22 @@ implementation {
 			if (pktsitioslibres_tx == NULL) {
 				return;
 			}
-			pktsitioslibres_tx->movilAsociado3 = MOVIL_ID;
-			pktsitioslibres_tx->estado3 = OCUPADO;
+			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+			pktsitioslibres_tx->estado = OCUPADO;
+
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+			}
+		}else if(i == 3){
+			// Reserva memoria para el paquete
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+			pktsitioslibres_tx->estado = OCUPADO;
 
 			//Envía
 			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
@@ -266,15 +266,15 @@ implementation {
 		bool parked = FALSE;
 		int i;
 		if(movilXr <= (COORD_APARC_X1+50) && movilXr >= (COORD_APARC_X1-50) && movilYr <= (COORD_APARC_Y1+50) && movilYr >= (COORD_APARC_Y1-50)){
-			i = 0;
-			sendParkedState(i);
-			parked = TRUE;
-		}else if(movilXr <= (COORD_APARC_X2+50) && movilXr >= (COORD_APARC_X2-50) && movilYr <= (COORD_APARC_Y2+50) && movilYr >= (COORD_APARC_Y2-50)){
 			i = 1;
 			sendParkedState(i);
 			parked = TRUE;
-		}else if(movilXr <= (COORD_APARC_X3+50) && movilXr >= (COORD_APARC_X3-50) && movilYr <= (COORD_APARC_Y3+50) && movilYr >= (COORD_APARC_Y3-50)){
+		}else if(movilXr <= (COORD_APARC_X2+50) && movilXr >= (COORD_APARC_X2-50) && movilYr <= (COORD_APARC_Y2+50) && movilYr >= (COORD_APARC_Y2-50)){
 			i = 2;
+			sendParkedState(i);
+			parked = TRUE;
+		}else if(movilXr <= (COORD_APARC_X3+50) && movilXr >= (COORD_APARC_X3-50) && movilYr <= (COORD_APARC_Y3+50) && movilYr >= (COORD_APARC_Y3-50)){
+			i = 3;
 			sendParkedState(i);
 			parked = TRUE;
 		}
@@ -286,50 +286,58 @@ implementation {
 		printf("He reservado la plaza %d \n",i);
 		printfflush();
 
-		if (i == 0){
+		if (i == 1){
 			// Reserva memoria para el paquete
 			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 			// Reserva errónea
 			if (pktsitioslibres_tx == NULL) {
 				return;
 			}
-			pktsitioslibres_tx->movilAsociado1 = MOVIL_ID;
-			pktsitioslibres_tx->estado1 = RESERVADO;
-			//Envía
-			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-				busy = TRUE;	// Ocupado
-			}
-			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-			sendMsgRSSI();
-		}else if(i == 1){
-			// Reserva memoria para el paquete
-			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-			// Reserva errónea
-			if (pktsitioslibres_tx == NULL) {
-				return;
-			}
-			pktsitioslibres_tx->movilAsociado2 = MOVIL_ID;
-			pktsitioslibres_tx->estado2 = RESERVADO;
-			//Envía
-			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-				busy = TRUE;	// Ocupado
-			}
-			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-			sendMsgRSSI();
+			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+			pktsitioslibres_tx->estado = RESERVADO;
 
+			
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+				printf("Mando el mensaje de reserva\n");
+				printfflush();
+			}
+			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
+			sendMsgRSSI();
 		}else if(i == 2){
 			// Reserva memoria para el paquete
 			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+			pktsitioslibres_tx->estado = RESERVADO;
+			//Envía
+			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
+				busy = TRUE;	// Ocupado
+				printf("Mando el mensaje de reserva\n");
+				printfflush();
+			}
+			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
+			sendMsgRSSI();
+
+		}else if(i == 3){
+			// Reserva memoria para el paquete
+			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 
 			// Reserva errónea
 			if (pktsitioslibres_tx == NULL) {
 				return;
 			}
-			pktsitioslibres_tx->movilAsociado3 = MOVIL_ID;
-			pktsitioslibres_tx->estado3 = RESERVADO;
+			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+			pktsitioslibres_tx->estado = RESERVADO;
 			//Envía
 			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
 				busy = TRUE;	// Ocupado
+				printf("Mando el mensaje de reserva\n");
+				printfflush();
 			}
 			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
 			sendMsgRSSI();
@@ -455,29 +463,29 @@ implementation {
 		}else if (len == sizeof(SitiosLibresMsg)){
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
 
-			if(pktsitioslibres_rx->estado1 == LIBRE){
+			if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC1_ID){
 				// Enciende led verde para notificar hueco libre encontrado
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
 
-				i = 0;
-				sendReservedState(i);
-
-			}else if (pktsitioslibres_rx->estado2 == LIBRE){
-				call Leds.led0On();   	// Led 0 On
-				call Leds.led1Off();   	// Led 1 Off
-				call Leds.led2Off();    // Led 2 Off
-				
 				i = 1;
 				sendReservedState(i);
 
-			}else if(pktsitioslibres_rx->estado3 == LIBRE){
+			}else if (pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC2_ID){
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
 				
 				i = 2;
+				sendReservedState(i);
+
+			}else if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC3_ID){
+				call Leds.led0On();   	// Led 0 On
+				call Leds.led1Off();   	// Led 1 Off
+				call Leds.led2Off();    // Led 2 Off
+				
+				i = 3;
 				sendReservedState(i);
 
 			}else{
