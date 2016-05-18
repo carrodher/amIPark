@@ -38,7 +38,6 @@ implementation {
 	uint16_t coorY3 = COORD_APARC_Y3;
 	uint16_t movilAsociado3 = NO_MOVIL_ASOCIADO;	//ID del movil que esta aparcado o quiere aparcarse
 	uint16_t estado3  = LIBRE;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
-	uint16_t num_plazas = 3;
 	
 	uint16_t manda3mensajes = 0;
 
@@ -159,8 +158,6 @@ void sendParkPlaces1(){
 			pktsitioslibres_tx->coorY = coorY1;
 			pktsitioslibres_tx->movilAsociado = movilAsociado1;
 			pktsitioslibres_tx->estado = estado1;
-			pktsitioslibres_tx->num_plazas = num_plazas;
-
 			
 			// Envía
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
@@ -195,8 +192,6 @@ void sendParkPlaces1(){
 			pktsitioslibres_tx->coorY = coorY2;
 			pktsitioslibres_tx->movilAsociado = movilAsociado2;
 			pktsitioslibres_tx->estado = estado2;
-			pktsitioslibres_tx->num_plazas = num_plazas;
-
 
 			
 			// Envía
@@ -231,8 +226,6 @@ void sendParkPlaces1(){
 			pktsitioslibres_tx->coorY = coorY3;
 			pktsitioslibres_tx->movilAsociado = movilAsociado3;
 			pktsitioslibres_tx->estado = estado3;
-			pktsitioslibres_tx->num_plazas = num_plazas;
-
 			
 			// Envía
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
@@ -344,50 +337,14 @@ void sendParkPlaces1(){
 					printfflush();										
 				}
 			}
+		}else if (len == sizeof(LocationMsg)){
+			LocationMsg* locationmsg_rx = (LocationMsg*)payload;	//Extrae el payload
+			printf("He recibido LocationMsg de %d\n", locationmsg_rx->ID_movil);
+			printf("Coordenada X: %d, Coordenada Y: %d, distanciam: %d, distancia1: %d, distancia2: %d, distancia3: %d", locationmsg_rx->coorX, locationmsg_rx->coorY, distancem, distance1, distance2, distance3);
+
+			printfflush();
 		}
 		return msg;
 	}
-	// En cualquiera de los casos cuando expira el temporizador dirige a "event void Timer0.fired()
-	
-		// Si no está ocupado forma y envía el mensaje
-		/*if (!busy) {
-			// Reserva memoria para el paquete
-			FijoMsg* pktfijo_tx = (FijoMsg*)(call Packet.getPayload(&pkt, sizeof(FijoMsg)));
-
-			// Reserva errónea
-			if (pktfijo_tx == NULL) {
-				return;
-			}
-
-			// Forma el paquete a tx
-			pktfijo_tx->ID_fijo    = nodeID;    // Campo 1: ID del nodo fijo
-			pktfijo_tx->medidaRssi = rssi2;     // Campo 2: Medida RSSI
-
-      		// Determinar las coordenadas de este nodo fijo
-      		switch (nodeID) {
-        		case FIJO1_ID:
-          		pktfijo_tx->x = FIJO1_X;   // Campo 3: Coordenada X
-				pktfijo_tx->y = FIJO1_Y;   // Campo 4: Coordenada Y
-          		break;
-
-        		case FIJO2_ID:
-          		pktfijo_tx->x = FIJO2_X;   // Campo 3: Coordenada X
-				pktfijo_tx->y = FIJO2_Y;   // Campo 4: Coordenada Y
-          		break;
-
-        		case FIJO3_ID:
-          		pktfijo_tx->x = FIJO3_X;   // Campo 3: Coordenada X
-				pktfijo_tx->y = FIJO3_Y;   // Campo 4: Coordenada Y
-          		break;
-      		}
-
-			// Envía
-			if (call AMSend.send(MOVIL_ID, &pkt, sizeof(FijoMsg)) == SUCCESS) {
-				//					|-> Destino = Móvil
-				busy = TRUE;	// Ocupado
-				call Leds.led0Off();   // Led 0 Off
-				call Leds.led1On();    // Led 1 ON cuando envío mi paquete
-			}
-		}*/
 	
 }
