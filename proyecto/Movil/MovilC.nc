@@ -54,6 +54,7 @@ implementation {
    float a = -21.593;
    float b = -50.093;
 
+   bool reserved = FALSE;
 
   /* RSSI en función de la distancia: RSSI(D) = a·log(D)+b */
 
@@ -102,7 +103,7 @@ implementation {
 				//						|-> Destino = Difusión
 				busy = TRUE;	// Ocupado
 				// Enciende los 3 leds cuando envía el paquete que organiza los slots
-				printf("He llegado al parking, solicito información sobre las plazas\n");
+				printf("He llegado al parking, solicito informacion sobre las plazas\n");
 				printfflush();
 				call Leds.led0On();
 				call Leds.led1On();
@@ -412,6 +413,12 @@ implementation {
 					call Leds.led0On();
 					call Leds.led1Off();
 					call Leds.led2Off();
+					printf("APARCADO!\n");
+					printfflush();
+				}else{
+					// Borrar este else despues de depurar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+					printf("NO APARCADO!\n");
+					printfflush();
 				}
 
 				// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
@@ -463,32 +470,35 @@ implementation {
 		}else if (len == sizeof(SitiosLibresMsg)){
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
 
-			if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC1_ID){
+			if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC1_ID && reserved == FALSE){
 				// Enciende led verde para notificar hueco libre encontrado
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
 
 				i = 1;
+				reserved = TRUE;
 				sendReservedState(i);
 
-			}else if (pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC2_ID){
+			}else if (pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC2_ID && reserved == FALSE){
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
 				
 				i = 2;
+				reserved = TRUE;
 				sendReservedState(i);
 
-			}else if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC3_ID){
+			}else if(pktsitioslibres_rx->estado == LIBRE && pktsitioslibres_rx->ID_plaza == APARC3_ID && reserved == FALSE){
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
 				
 				i = 3;
+				reserved = TRUE;
 				sendReservedState(i);
 
-			}else{
+			}else if(reserved == FALSE){
 				// Enciende led rojo para notificar no hueco libre encontrado
 				call Leds.led0Off();   	// Led 0 Off
 				call Leds.led1On();   	// Led 1 On
@@ -496,6 +506,9 @@ implementation {
 				printf("No hay hueco libre \n");
 				printfflush();
 				call TimerLedRojo.startOneShot(TIEMPO_ROJO_ENCENDIDO);
+			}else{
+				printf("Aparcando...\n");
+				printfflush();
 			}
 		}
 		return msg;
