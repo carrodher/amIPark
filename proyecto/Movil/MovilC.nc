@@ -64,6 +64,8 @@ implementation {
 
 		uint16_t z = 0;
 
+		uint8_t nodeID;
+
 	  /* RSSI en función de la distancia: RSSI(D) = a·log(D)+b */
 
 		/* Exponente que modifica la influencia de la distancia en los pesos.
@@ -85,7 +87,7 @@ implementation {
 					/*** MENSAJE TRAS PULSAR EL BOTON ***/
 
 					//Forma el paquete
-					pktllegada_tx->ID_movil = MOVIL_ID;
+					pktllegada_tx->ID_movil = nodeID;
 					pktllegada_tx->orden = ORDEN_INICIAL;
 
 					//Envía
@@ -115,6 +117,9 @@ implementation {
 		event void Boot.booted() {
 			call AMControl.start();
 			call Notify.enable();		// Botón
+			nodeID = TOS_NODE_ID;
+			printf("Este es mi ID %d\n", nodeID);
+			printfflush();
 		}
 
 		/* Si la radio está encendida arranca el temporizador.
@@ -141,8 +146,8 @@ implementation {
 					return;
 				}
 				//Forma el paquete
-				// Campo 1: MOVIL_ID
-				pktmovil_tx->ID_movil = MOVIL_ID;
+				// Campo 1: nodeID
+				pktmovil_tx->ID_movil = nodeID;
 				// Campo 2: Tslot
 				pktmovil_tx->Tslot = TIMER_PERIOD_MILLI/SLOTS;
 				// Campos 3, 4, 5 y 6: Orden de los slots
@@ -261,7 +266,7 @@ implementation {
 						if (pktsitioslibres_tx == NULL) {
 							return;
 						}
-						pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+						pktsitioslibres_tx->movilAsociado = nodeID;
 						pktsitioslibres_tx->estado = OCUPADO;
 						pktsitioslibres_tx->ID_plaza = i;
 						pktsitioslibres_tx->coorX = COORD_APARC_X1;
@@ -281,7 +286,7 @@ implementation {
 					if (pktsitioslibres_tx == NULL) {
 						return;
 					}
-					pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+					pktsitioslibres_tx->movilAsociado = nodeID;
 					pktsitioslibres_tx->estado = OCUPADO;
 					pktsitioslibres_tx->ID_plaza = i;
 					pktsitioslibres_tx->coorX = COORD_APARC_X2;
@@ -302,7 +307,7 @@ implementation {
 					if (pktsitioslibres_tx == NULL) {
 						return;
 					}
-					pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+					pktsitioslibres_tx->movilAsociado = nodeID;
 					pktsitioslibres_tx->estado = OCUPADO;
 					pktsitioslibres_tx->ID_plaza = i;
 					pktsitioslibres_tx->coorX = COORD_APARC_X3;
@@ -350,7 +355,7 @@ implementation {
 					if (pktsitioslibres_tx == NULL) {
 						return;
 					}
-					pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+					pktsitioslibres_tx->movilAsociado = nodeID;
 					pktsitioslibres_tx->estado = RESERVADO;
 					pktsitioslibres_tx->ID_plaza = APARC1_ID;
 					pktsitioslibres_tx->coorX = COORD_APARC_X1;
@@ -377,7 +382,7 @@ implementation {
 					if (pktsitioslibres_tx == NULL) {
 						return;
 					}
-					pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+					pktsitioslibres_tx->movilAsociado = nodeID;
 					pktsitioslibres_tx->estado = RESERVADO;
 					pktsitioslibres_tx->ID_plaza = APARC2_ID;
 					pktsitioslibres_tx->coorX = COORD_APARC_X2;
@@ -404,7 +409,7 @@ implementation {
 					if (pktsitioslibres_tx == NULL) {
 						return;
 					}
-					pktsitioslibres_tx->movilAsociado = MOVIL_ID;
+					pktsitioslibres_tx->movilAsociado = nodeID;
 					pktsitioslibres_tx->estado = RESERVADO;
 					pktsitioslibres_tx->ID_plaza = APARC3_ID;
 					pktsitioslibres_tx->coorX = COORD_APARC_X3;
@@ -518,8 +523,8 @@ implementation {
 						}
 
 						/*** FORMA EL PAQUETE ***/
-						// Campo 1: MOVIL_ID
-						pktmovil_loc->ID_movil = MOVIL_ID;
+						// Campo 1: nodeID
+						pktmovil_loc->ID_movil = nodeID;
 						// Campo 2: Coordenada X
 						pktmovil_loc->coorX = movilX;
 						// Campo 3: Coordenada Y
