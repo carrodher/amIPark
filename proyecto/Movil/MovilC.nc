@@ -5,13 +5,15 @@
 module MovilC {
 	uses interface Boot;
 	uses interface Leds;
-	uses interface Timer<TMilli> as Timer0;
+	//uses interface Timer<TMilli> as Timer0;
 	uses interface Timer<TMilli> as TimerLedRojo;
 	uses interface Packet;
 	uses interface AMPacket;
 	uses interface AMSend;
 	uses interface Receive;
 	uses interface SplitControl as AMControl;
+	uses interface Get<button_state_t>;
+	uses interface Notify<button_state_t>;
 }
 implementation {
 	int16_t rssi = 0;					// Rssi recibido
@@ -64,13 +66,14 @@ implementation {
 	// Se ejecuta al alimentar t-mote. Arranca la radio
 	event void Boot.booted() {
 		call AMControl.start();
+		call Notify.enable();		// Botón
 	}
 
 	/* Si la radio está encendida arranca el temporizador.
 	Arranca la radio si la primera vez hubo algún error */
 	event void AMControl.startDone(error_t err) {
 		if (err == SUCCESS) {
-			call Timer0.startPeriodic(TIMER_PERIOD_MILLI);
+			call Notify.enable();		// Botón
 		}
 		else {
 			call AMControl.start();
@@ -80,39 +83,46 @@ implementation {
 	event void AMControl.stopDone(error_t err) {
 	}
 
-	// Maneja el temporizador
-	event void Timer0.fired() {
-		// Si no está ocupado forma y envía el mensaje
-		if (!busy) {
-			// Reserva memoria para el paquete
-			LlegadaMsg * pktllegada_tx = (LlegadaMsg*)(call Packet.getPayload(&pkt, sizeof(LlegadaMsg)));
-			//Reserva erronea
-			if(pktllegada_tx == NULL){
-				return;
+	event void Notify.notify(button_state_t state) {
+		// Botón pulsado
+		if (state == BUTTON_PRESSED) {
+			// Si no está ocupado forma y envía el mensaje
+			if (!busy) {
+				// Reserva memoria para el paquete
+				LlegadaMsg * pktllegada_tx = (LlegadaMsg*)(call Packet.getPayload(&pkt, sizeof(LlegadaMsg)));
+				//Reserva erronea
+				if(pktllegada_tx == NULL){
+					return;
+				}
+
+				/*** MENSAJE TRAS PULSAR EL BOTON ***/
+
+				//Forma el paquete
+				pktllegada_tx->ID_movil = MOVIL_ID;
+				pktllegada_tx->orden = ORDEN_INICIAL;
+
+				//Envía
+				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LlegadaMsg)) == SUCCESS){
+					//						|-> Destino = Difusión
+					busy = TRUE;	// Ocupado
+					// Enciende los 3 leds cuando envía el paquete que organiza los slots
+					printf("He llegado al parking, solicito información sobre las plazas\n");
+					printfflush();
+					call Leds.led0On();
+					call Leds.led1On();
+					call Leds.led2On();
+				}
 			}
-
-			/*** MENSAJE TRAS PULSAR EL BOTON ***/
-
-			//Forma el paquete
-			pktllegada_tx->ID_movil = MOVIL_ID;
-			pktllegada_tx->orden = ORDEN_INICIAL;
-
-			//Envía
-			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LlegadaMsg)) == SUCCESS){
-				//						|-> Destino = Difusión
-				busy = TRUE;	// Ocupado
-				// Enciende los 3 leds cuando envía el paquete que organiza los slots
-				printf("He llegado al parking, solicito información sobre las plazas\n");
-				printfflush();
-				call Leds.led0On();
-				call Leds.led1On();
-				call Leds.led2On();
-			}
+		}
+		// Botón no pulsado
+		else if (state == BUTTON_RELEASED) {
+			call Leds.led0On();
+			call Leds.led1On();
+			call Leds.led2On();
 		}
 	}
 
-
-	void sendMsgRSSI (){
+	void sendMsgRSSI(){
 		//ENVIA MENSAJE PARA RECIBIR RSSI
 		MovilMsg* pktmovil_tx = (MovilMsg*)(call Packet.getPayload(&pkt, sizeof(MovilMsg)));
 
@@ -213,10 +223,10 @@ implementation {
 	}
 
 	void sendParkedState(int i){
-		
+
 		printf("He aparcado en la plaza %d \n",i);
 		printfflush();
-		
+
 		if(i == 0){
 			// Reserva memoria para el paquete
 			SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
@@ -259,7 +269,7 @@ implementation {
 				busy = TRUE;	// Ocupado
 			}
 		}
-		
+
 	}
 
 	bool am_i_parked(uint16_t movilXr, uint16_t movilYr){
@@ -395,7 +405,7 @@ implementation {
 				movilX = calculateLocation(w_nm,w_n1,w_n2,w_n3,coorm_x,coor1_x,coor2_x,coor3_x);
 				// Calculamos la coordenada Y del nodo móvil
 				movilY = calculateLocation(w_nm,w_n1,w_n2,w_n3,coorm_y,coor1_y,coor2_y,coor3_y);
-				
+
 				printf("Ahora mismo estoy en: (%d, %d) \n",movilX, movilY);
 				printfflush();
 
@@ -468,7 +478,7 @@ implementation {
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
-				
+
 				i = 1;
 				sendReservedState(i);
 
@@ -476,7 +486,7 @@ implementation {
 				call Leds.led0On();   	// Led 0 On
 				call Leds.led1Off();   	// Led 1 Off
 				call Leds.led2Off();    // Led 2 Off
-				
+
 				i = 2;
 				sendReservedState(i);
 
