@@ -249,6 +249,9 @@ event void Notify.notify(button_state_t state) {
 			}
 			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
 			pktsitioslibres_tx->estado = OCUPADO;
+			pktsitioslibres_tx->ID_plaza = i;
+			pktsitioslibres_tx->coorX = COORD_APARC_X1;
+			pktsitioslibres_tx->coorY = COORD_APARC_Y1;
 			//Envía
 			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
 				busy = TRUE;	// Ocupado
@@ -262,6 +265,9 @@ event void Notify.notify(button_state_t state) {
 			}
 			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
 			pktsitioslibres_tx->estado = OCUPADO;
+			pktsitioslibres_tx->ID_plaza = i;
+			pktsitioslibres_tx->coorX = COORD_APARC_X2;
+			pktsitioslibres_tx->coorY = COORD_APARC_Y2;
 
 			//Envía
 			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
@@ -276,6 +282,9 @@ event void Notify.notify(button_state_t state) {
 			}
 			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
 			pktsitioslibres_tx->estado = OCUPADO;
+			pktsitioslibres_tx->ID_plaza = i;
+			pktsitioslibres_tx->coorX = COORD_APARC_X3;
+			pktsitioslibres_tx->coorY = COORD_APARC_Y3;
 
 			//Envía
 			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
@@ -319,6 +328,8 @@ event void Notify.notify(button_state_t state) {
 			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
 			pktsitioslibres_tx->estado = RESERVADO;
 			pktsitioslibres_tx->ID_plaza = APARC1_ID;
+			pktsitioslibres_tx->coorX = COORD_APARC_X1;
+			pktsitioslibres_tx->coorY = COORD_APARC_Y1;
 
 
 			//Envía
@@ -340,6 +351,8 @@ event void Notify.notify(button_state_t state) {
 			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
 			pktsitioslibres_tx->estado = RESERVADO;
 			pktsitioslibres_tx->ID_plaza = APARC2_ID;
+			pktsitioslibres_tx->coorX = COORD_APARC_X2;
+			pktsitioslibres_tx->coorY = COORD_APARC_Y2;
 			//Envía
 			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
 				busy = TRUE;	// Ocupado
@@ -360,6 +373,8 @@ event void Notify.notify(button_state_t state) {
 			pktsitioslibres_tx->movilAsociado = MOVIL_ID;
 			pktsitioslibres_tx->estado = RESERVADO;
 			pktsitioslibres_tx->ID_plaza = APARC3_ID;
+			pktsitioslibres_tx->coorX = COORD_APARC_X3;
+			pktsitioslibres_tx->coorY = COORD_APARC_Y3;
 			//Envía
 			if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
 				busy = TRUE;	// Ocupado
