@@ -38,6 +38,7 @@ implementation {
 	uint16_t coorY3 = COORD_APARC_Y3;
 	uint16_t movilAsociado3 = NO_MOVIL_ASOCIADO;	//ID del movil que esta aparcado o quiere aparcarse
 	uint16_t estado3  = LIBRE;			//estado de la plaza de aparcamiento (libre 0, reservado 1, ocupado 2)
+	uint16_t num_plazas = 3;
 
 	// Obtiene el valor RSSI del paquete recibido
 	int16_t getRssi(message_t *msg){
@@ -150,31 +151,21 @@ implementation {
 		}
 	}
 
-	void sendParkPlaces(){
+	void sendParkPlaces1(){
 		SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 			// Reserva errónea
 			if (pktsitioslibres_tx == NULL) {
 				return;
 			}
 			//Forma el paquete
-			// Campos plaza 1
-			pktsitioslibres_tx->ID_plaza1 = ID_plaza1;
-			pktsitioslibres_tx->coorX1 = coorX1;
-			pktsitioslibres_tx->coorY1 = coorY1;
-			pktsitioslibres_tx->movilAsociado1 = movilAsociado1;
-			pktsitioslibres_tx->estado1 = estado1;
-			// Campos plaza 2
-			pktsitioslibres_tx->ID_plaza2 = ID_plaza2;
-			pktsitioslibres_tx->coorX2 = coorX2;
-			pktsitioslibres_tx->coorY2 = coorY2;
-			pktsitioslibres_tx->movilAsociado2 = movilAsociado2;
-			pktsitioslibres_tx->estado2 = estado2;
-			// Campos plaza 3
-			pktsitioslibres_tx->ID_plaza3 = ID_plaza3;
-			pktsitioslibres_tx->coorX3 = coorX3;
-			pktsitioslibres_tx->coorY3 = coorY3;
-			pktsitioslibres_tx->movilAsociado3 = movilAsociado3;
-			pktsitioslibres_tx->estado3 = estado3;
+			// Campos plaza 1 (mensaje1)
+			pktsitioslibres_tx->ID_plaza = ID_plaza1;
+			pktsitioslibres_tx->coorX = coorX1;
+			pktsitioslibres_tx->coorY = coorY1;
+			pktsitioslibres_tx->movilAsociado = movilAsociado1;
+			pktsitioslibres_tx->estado = estado1;
+			pktsitioslibres_tx->num_plazas = num_plazas
+
 			
 			// Envía
 			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
@@ -185,7 +176,73 @@ implementation {
 					printfflush();
 				}else{
 					printParkPlacesState(estado1, ID_plaza1, coorX1, coorY1);
+
+				}
+				call Leds.led0On();
+				call Leds.led1On();
+				call Leds.led2On();
+			}
+	}
+	void sendParkPlaces2(){
+		SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+			//Forma el paquete
+
+			// Campos plaza 2 (mensaje2)
+			pktsitioslibres_tx->ID_plaza = ID_plaza2;
+			pktsitioslibres_tx->coorX = coorX2;
+			pktsitioslibres_tx->coorY = coorY2;
+			pktsitioslibres_tx->movilAsociado = movilAsociado2;
+			pktsitioslibres_tx->estado = estado2;
+			pktsitioslibres_tx->num_plazas = num_plazas
+
+
+
+			
+			// Envía
+			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
+				busy = TRUE;
+				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
+				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
+					printf("\n");
+					printfflush();
+				}else{
+					
 					printParkPlacesState(estado2, ID_plaza2, coorX2, coorY2);
+				}
+				call Leds.led0On();
+				call Leds.led1On();
+				call Leds.led2On();
+			}
+	}
+	void sendParkPlaces3(){
+		SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
+			// Reserva errónea
+			if (pktsitioslibres_tx == NULL) {
+				return;
+			}
+	
+
+			// Campos plaza 3 (mensaje3)
+			pktsitioslibres_tx->ID_plaza = ID_plaza3;
+			pktsitioslibres_tx->coorX = coorX3;
+			pktsitioslibres_tx->coorY = coorY3;
+			pktsitioslibres_tx->movilAsociado = movilAsociado3;
+			pktsitioslibres_tx->estado = estado3;
+			pktsitioslibres_tx->num_plazas = num_plazas
+
+			
+			// Envía
+			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS) {
+				busy = TRUE;
+				// Enciende los 3 leds cuando envía el paquete largo primero e imprime el estado de las plazas
+				if(estado1==OCUPADO && estado2==OCUPADO && estado3==OCUPADO){
+					printf("\n");
+					printfflush();
+				}else{
 					printParkPlacesState(estado3, ID_plaza3, coorX3, coorY3);
 				}
 				call Leds.led0On();
@@ -224,44 +281,46 @@ implementation {
 			LlegadaMsg* pktllegada_rx = (LlegadaMsg*)payload;	//Extrae el payload
 			/* si hubiese que comprobarse algo del mensaje de hola que tal se haria aqui */ 
 
-			sendParkPlaces();
+			sendParkPlaces1();
+			sendParkPlaces2();
+			sendParkPlaces3();
 
 		}else if (len == sizeof (SitiosLibresMsg)) {
 			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;	//Extrae el payload
-			if (pktsitioslibres_rx->movilAsociado1 != NO_MOVIL_ASOCIADO) {
-				if(pktsitioslibres_rx->estado1 == RESERVADO){
-					movilAsociado1 = pktsitioslibres_rx->movilAsociado1;
-					estado1 = pktsitioslibres_rx->estado1;
-					printf("El movil %d ha reservado la plaza 1\n", movilAsociado1);
+			if (pktsitioslibres_rx->movilAsociado != NO_MOVIL_ASOCIADO && pktsitioslibres_rx->ID_plaza == APARC1_ID) {
+				if(pktsitioslibres_rx->estado == RESERVADO ){
+					movilAsociado1 = pktsitioslibres_rx->movilAsociado;
+					estado1 = pktsitioslibres_rx->estado;
+					printf("El movil %d ha reservado la plaza %d\n", movilAsociado1, ID_plaza1);
 					printfflush();
-				}else if(pktsitioslibres_rx->estado1 == OCUPADO){
-					movilAsociado1 = pktsitioslibres_rx->movilAsociado1;
-					estado1 = pktsitioslibres_rx->estado1;
-					printf("El movil %d ha aparcado en la plaza 1\n", movilAsociado1);
+				}else if(pktsitioslibres_rx->estado == OCUPADO ){
+					movilAsociado1 = pktsitioslibres_rx->movilAsociado;
+					estado1 = pktsitioslibres_rx->estado;
+					printf("El movil %d ha aparcado en la plaza %d\n", movilAsociado1, ID_plaza1);
 					printfflush();					
 				}
-			}else if (pktsitioslibres_rx->movilAsociado2 != NO_MOVIL_ASOCIADO) {
-				if(pktsitioslibres_rx->estado2 == RESERVADO){
-					movilAsociado2 = pktsitioslibres_rx->movilAsociado2;
-					estado2 = pktsitioslibres_rx->estado2;
-					printf("El movil %d ha reservado la plaza 2\n", movilAsociado2);
+			}else if (pktsitioslibres_rx->movilAsociado != NO_MOVIL_ASOCIADO && pktsitioslibres_rx->ID_plaza == APARC2_ID) {
+				if(pktsitioslibres_rx->estado == RESERVADO){
+					movilAsociado2 = pktsitioslibres_rx->movilAsociado;
+					estado2 = pktsitioslibres_rx->estado;
+					printf("El movil %d ha reservado la plaza %d\n", movilAsociado2, ID_plaza2);
 					printfflush();
-				}else if(pktsitioslibres_rx->estado2 == OCUPADO){
-					movilAsociado2 = pktsitioslibres_rx->movilAsociado2;
-					estado2 = pktsitioslibres_rx->estado2;
-					printf("El movil %d ha aparcado en la plaza 2\n", movilAsociado2);		
+				}else if(pktsitioslibres_rx->estado == OCUPADO){
+					movilAsociado2 = pktsitioslibres_rx->movilAsociado;
+					estado2 = pktsitioslibres_rx->estado;
+					printf("El movil %d ha aparcado en la plaza %d\n", movilAsociado2, ID_plaza2);		
 					printfflush();			
 				}
-			}else if (pktsitioslibres_rx->movilAsociado3 != NO_MOVIL_ASOCIADO) {
-				if(pktsitioslibres_rx->estado3 == RESERVADO){
-					movilAsociado3 = pktsitioslibres_rx->movilAsociado3;
-					estado3 = pktsitioslibres_rx->estado3;
-					printf("El movil %d ha reservado la plaza 3\n", movilAsociado3);
+			}else if (pktsitioslibres_rx->movilAsociado != NO_MOVIL_ASOCIADO && pktsitioslibres_rx->ID_plaza == APARC3_ID) {
+				if(pktsitioslibres_rx->estado == RESERVADO){
+					movilAsociado3 = pktsitioslibres_rx->movilAsociado;
+					estado3 = pktsitioslibres_rx->estado;
+					printf("El movil %d ha reservado la plaza %d\n", movilAsociado3, ID_plaza3);
 					printfflush();
-				}else if(pktsitioslibres_rx->estado3 == OCUPADO){
-					movilAsociado3 = pktsitioslibres_rx->movilAsociado3;
-					estado3 = pktsitioslibres_rx->estado3;
-					printf("El movil %d ha aparcado en la plaza 3\n", movilAsociado3);
+				}else if(pktsitioslibres_rx->estado == OCUPADO){
+					movilAsociado3 = pktsitioslibres_rx->movilAsociado;
+					estado3 = pktsitioslibres_rx->estado;
+					printf("El movil %d ha aparcado en la plaza %d\n", movilAsociado3, ID_plaza3);
 					printfflush();										
 				}
 			}
