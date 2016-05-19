@@ -18,23 +18,17 @@ enum {
 	FIJOM_X					= 0,
 	FIJOM_Y					= 0,
 	FIJO1_X					= 0,
-	FIJO1_Y					= 300,
-	FIJO2_X					= 0,
-	FIJO2_Y					= 200,
-	FIJO3_X					= 300,
-	FIJO3_Y					= 200,
-	/*COORD_APARC_X1			= 50,
-	COORD_APARC_Y1			= 250,
-	COORD_APARC_X2			= 150,
-	COORD_APARC_Y2			= 250,
-	COORD_APARC_X3			= 250,
-	COORD_APARC_Y3			= 250,*/
-	COORD_APARC_X1			= 150,
-	COORD_APARC_Y1			= 200,
-	COORD_APARC_X2			= 200,
-	COORD_APARC_Y2			= 200,
-	COORD_APARC_X3			= 250,
-	COORD_APARC_Y3			= 200,
+	FIJO1_Y					= 400,
+	FIJO2_X					= 600,
+	FIJO2_Y					= 400,
+	FIJO3_X					= 600,
+	FIJO3_Y					= 0,
+	COORD_APARC_X1			= 100,
+	COORD_APARC_Y1			= 300,
+	COORD_APARC_X2			= 300,
+	COORD_APARC_Y2			= 300,
+	COORD_APARC_X3			= 500,
+	COORD_APARC_Y3			= 300,
 	NO_MOVIL_ASOCIADO		= 0,
 	LIBRE 					= 0,
 	RESERVADO 				= 1,
@@ -71,7 +65,7 @@ typedef nx_struct LocationMsg {
 } LocationMsg;
 
 typedef nx_struct LlegadaMsg {
-	nx_uint16_t ID_movil;		//ID movil 
+	nx_uint16_t ID_movil;		//ID movil
 	nx_uint16_t orden;			//orden para saber que hacer (llegada, salida....)
 } LlegadaMsg;
 
