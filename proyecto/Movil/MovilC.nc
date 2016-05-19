@@ -247,7 +247,7 @@ implementation {
 			/* Fórmula:
 				X = (wm·xm + w1·x1 + w2·x2 + w3·x3)/(wm + w1 + w2 + w3)
 				Y = (wm·ym + w1·y1 + w2·y2 + w3·y3)/(wm + w1 + w2 + w3) */
-				return (wm* cm + w1*c1 + w2*c2 + w3*c3)/(wm + w1 + w2 + w3);
+				return (wm*cm + w1*c1 + w2*c2 + w3*c3)/(wm + w1 + w2 + w3);
 			}
 
 			void sendParkedState(int i){
