@@ -34,10 +34,10 @@ implementation {
 
 		uint16_t coor1_x = FIJO1_X;
 		uint16_t coor1_y = FIJO1_Y;
-		
+
 		uint16_t coor2_x = FIJO2_X;
 		uint16_t coor2_y = FIJO2_Y;
-		
+
 		uint16_t coor3_x = FIJO3_X;
 		uint16_t coor3_y = FIJO3_Y;
 
@@ -138,7 +138,7 @@ implementation {
 		event void AMControl.stopDone(error_t err) {
 		}
 
-		
+
 		void sendMsgRSSI(){
 			//ENVIA MENSAJE PARA RECIBIR RSSI
 			if(!busy){
@@ -324,15 +324,15 @@ implementation {
 		bool am_i_parked(uint16_t movilXr, uint16_t movilYr){
 			bool parked = FALSE;
 			uint16_t j = 0;
-			if(movilXr <= (COORD_APARC_X1+20) && movilXr >= (COORD_APARC_X1-20) && movilYr <= (COORD_APARC_Y1+20) && movilYr >= (COORD_APARC_Y1-20)){
+			if(movilXr <= (COORD_APARC_X1+ERROR) && movilXr >= (COORD_APARC_X1-ERROR) && movilYr <= (COORD_APARC_Y1+ERROR) && movilYr >= (COORD_APARC_Y1-ERROR)){
 				j = 1;
 				sendParkedState(j);
 				parked = TRUE;
-			}else if(movilXr <= (COORD_APARC_X2+20) && movilXr >= (COORD_APARC_X2-20) && movilYr <= (COORD_APARC_Y2+20) && movilYr >= (COORD_APARC_Y2-20)){
+			}else if(movilXr <= (COORD_APARC_X2+ERROR) && movilXr >= (COORD_APARC_X2-ERROR) && movilYr <= (COORD_APARC_Y2+ERROR) && movilYr >= (COORD_APARC_Y2-ERROR)){
 				j = 2;
 				sendParkedState(j);
 				parked = TRUE;
-			}else if(movilXr <= (COORD_APARC_X3+20) && movilXr >= (COORD_APARC_X3-20) && movilYr <= (COORD_APARC_Y3+20) && movilYr >= (COORD_APARC_Y3-20)){
+			}else if(movilXr <= (COORD_APARC_X3+ERROR) && movilXr >= (COORD_APARC_X3-ERROR) && movilYr <= (COORD_APARC_Y3+ERROR) && movilYr >= (COORD_APARC_Y3-ERROR)){
 				j = 3;
 				sendParkedState(j);
 				parked = TRUE;
@@ -347,7 +347,7 @@ implementation {
 
 			if (i == 1){
 
-				if(!busy){				
+				if(!busy){
 					// Reserva memoria para el paquete
 					SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
 					// Reserva errónea
@@ -539,7 +539,7 @@ implementation {
 
 						printf("Busy no se puede mandar el mensaje de location\n");
 						printfflush();
-						/*if(!busy){	
+						/*if(!busy){
 							// Reserva memoria para el paquete
 							LocationMsg* pktmovil_loc = (LocationMsg*)(call Packet.getPayload(&pkt, sizeof(LocationMsg)));
 
