@@ -54,6 +54,7 @@ implementation {
   float     b = -31.8018;//-50.093;      //
 
   ParkingSpot spot[PARKING_SIZE];       // Vector con información de cada plaza libre recibida
+  int16_t place = 0;
   /* ============================================== */
 
 
@@ -70,17 +71,18 @@ implementation {
 
 
   /* ========= [Declaración de funciones] ========= */
-  float   getDistance(int16_t rssi);
-  float   getWeight(float d);
-  int16_t computeLocation(float* w_t, uint16_t* c);
-  void    getLocation(int16_t* rssi);
-  void    printfFloat(float floatToBePrinted);
-  void    turnOnLed  (uint8_t led, uint16_t time);
-  void    turnOffLed (uint8_t led);
-  bool    getAssignedSlot (uint8_t slots, nx_uint8_t* slotsOwners, uint8_t* assignedSlot);
-  void    sendVehicleOrderMessage();  
-  void    sendBeaconMessage();
-  void    newRssiMeasureReceived(uint8_t nodeId);
+  float    getDistance(int16_t rssi);
+  float    getWeight(float d);
+  int16_t  computeLocation(float* w_t, uint16_t* c);
+  void     getLocation(int16_t* rssi);
+  void     printfFloat(float floatToBePrinted);
+  void     turnOnLed  (uint8_t led, uint16_t time);
+  void     turnOffLed (uint8_t led);
+  bool     getAssignedSlot (uint8_t slots, nx_uint8_t* slotsOwners, uint8_t* assignedSlot);
+  void     sendVehicleOrderMessage();  
+  void     sendBeaconMessage();
+  void     newRssiMeasureReceived(uint8_t nodeId);
+  uint16_t am_i_parked(uint16_t movilXr, uint16_t movilYr);
   /* ============================================== */
 
 
@@ -145,7 +147,24 @@ implementation {
     return numerator/denominator;
   }
 
-
+/**
+  *   Comprueba si esta aparcado en una de las plazas de aparcamiento
+  *   Devuelve 0 si no esta aparcado
+  */
+  uint16_t am_i_parked(uint16_t movilXr, uint16_t movilYr){
+    uint16_t parked = 0;
+    if(movilXr <= (SPOT_01_X+ERROR) && movilXr >= (SPOT_01_X-ERROR) && movilYr <= (SPOT_01_Y+ERROR) && movilYr >= (SPOT_01_Y-ERROR)){
+      parked = 1;
+      status = PARKED;
+    }else if(movilXr <= (SPOT_02_X+ERROR) && movilXr >= (SPOT_02_X-ERROR) && movilYr <= (SPOT_02_Y+ERROR) && movilYr >= (SPOT_02_Y-ERROR)){
+      parked = 2;
+      status = PARKED;
+    }else if(movilXr <= (SPOT_03_X+ERROR) && movilXr >= (SPOT_03_X-ERROR) && movilYr <= (SPOT_03_Y+ERROR) && movilYr >= (SPOT_03_Y-ERROR)){
+      parked = 3;
+      status = PARKED;
+    }
+    return parked;
+  }
 
   /**
   *   Obtiene la localización del nodo y la almacena en las variables globales movilX y movilY
@@ -164,7 +183,11 @@ implementation {
 
     printf("[INFO] Nueva localizacion: x=%d, y=%d\n", movilX, movilY);
     printfflush();
+
+    place = am_i_parked(movilX, movilY);
   }
+
+
 
 
   /**
@@ -464,6 +487,8 @@ implementation {
             break;
 
           case PARKED:
+          printf("He aparcado en la plaza %d\n", place);
+             printfflush();
             //TODO
             break;
 
@@ -501,7 +526,9 @@ implementation {
             break;
 
           case PARKED:
-            // Nada que hacer
+             printf("He aparcado en la plaza %d\n", place);
+             printfflush();
+             //sendParkedState(place)
             break;
 
         }
