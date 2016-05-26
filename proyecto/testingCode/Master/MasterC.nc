@@ -116,14 +116,17 @@ implementation {
   event void Notify.notify(button_state_t state) {
     // Comprobar si está pulsado
 	  if (state == BUTTON_PRESSED) {
-      printf("Pulsado\n");
-      printfflush();
       
       // Activar el modo de calibración o desactivarlo si ya estaba activo
       if (!calibrationMode) {
         calibrationMode = TRUE;   // Activarlo
+        printf("[DEBUG] Modo calibracion activado\n");
+        printfflush();
       } else {
         calibrationMode = FALSE;  // Desactivarlo
+
+        printf("[DEBUG] Modo calibracion desactivado\n");
+        printfflush();
 
         call RssiRequestTimer.stop();   // Detener el envio de mensajes de solicitud de medida RSSI
 
@@ -160,10 +163,12 @@ implementation {
         numberOfFreeSpots++;
         freeSpotsId[j++] = parkingStatus.spot[i].id;
 
-      } else {
-        printf("[INFO] No hay plazas libres\n");
-        printfflush();
       }
+    }
+    
+    if (numberOfFreeSpots == 0) {
+      printf("[INFO] No hay plazas libres\n");
+      printfflush();
     }
   }
 
@@ -318,7 +323,7 @@ implementation {
         linkedVehicles[i] = vehicleId;
         linked = TRUE;
         numberOfLinkedVehicles++;
-        printf("Vehiculo con ID (%d) asociado. Total: %d\n", vehicleId, numberOfLinkedVehicles);
+        printf("Vehiculo (ID=%d) asociado. Total: %d\n", vehicleId, numberOfLinkedVehicles);
         printfflush();
       }
     }
@@ -343,7 +348,7 @@ implementation {
         linkedVehicles[i] = 0;
         done = TRUE;
         numberOfLinkedVehicles--;
-        printf("Vehiculo con ID (%d) desasociado. Total: %d\n", vehicleId, numberOfLinkedVehicles);
+        printf("Vehiculo (ID=%d) desasociado. Total: %d\n", vehicleId, numberOfLinkedVehicles);
         printfflush();
       }
     }
@@ -378,7 +383,7 @@ implementation {
           assigned = TRUE;              // Se ha coseguido asignar la plaza al vehículo
 
         } else {
-          printf("[ERROR] Se intenta asignar la plaza (%d) ocupada por (%d)\n", spot, parkingStatus.vehicleID[i]);
+          printf("[ERROR] Se intenta asignar una plaza (%d) ya ocupada por (vehicleID=%d)\n", spot, parkingStatus.vehicleID[i]);
           printfflush();
         }
       }
@@ -386,7 +391,7 @@ implementation {
 
     // Comprobar si se logró asignar la plaza
     if (!assigned) {
-      printf("[ERROR] No se logró asignar la plaza solicitada (%d)\n", spot);
+      printf("[ERROR] No se puede asignar la plaza solicitada (%d)\n", spot);
       printfflush();
     }
 
@@ -422,7 +427,7 @@ implementation {
             unAssigned = TRUE;          // Se ha coseguido asignar la plaza al vehículo
 
           } else {
-            printf("[ERROR] Un vehículo (ID=%d) intenta dejar una plaza no asociada a el (%d)\n", vehicleId, spot);
+            printf("[ERROR] Un vehículo (ID=%d) intenta dejar una plaza (%d) no asociada a el\n", vehicleId, spot);
             printfflush();
           }
 
@@ -435,7 +440,7 @@ implementation {
 
     // Comprobar si se logró liberar la plaza
     if (!unAssigned) {
-      printf("[ERROR] No se logró liberar la plaza solicitada (%d)", spot);
+      printf("[ERROR] No se logró liberar la plaza (%d) solicitada\n", spot);
       printfflush();
     }
 
@@ -538,7 +543,9 @@ implementation {
         // Enviar y comprobar el resultado
         if(call AMSend.send(destination, &pkt, messageLength) == SUCCESS) {
           busy = TRUE;      // Ocupado
-          printf("[DEBUG] Enviado mensaje RssiMsg\n");
+          if (!calibrationMode) {
+            printf("[DEBUG] Enviado mensaje RssiMsg\n");
+          }
           printfflush();
           // Notificación visual de envio de mensaje
           turnOnLed(RED, LED_BLINK_TIME);
@@ -769,10 +776,12 @@ implementation {
     if (length == sizeof(RssiMsg)) {
       // Extraer el payload
       RssiMsg* msg_rx = (RssiMsg*)payload;
+      
+      if (!calibrationMode) {
+        printf("Recibido: RssiMsg / Orden: %d\n", msg_rx->order);
+        printfflush();
+      }
 
-      printf("Recibido: RssiMsg / Orden: %d\n", msg_rx->order);
-      printfflush();
-    
       // Determinar la orden recibida
       switch (msg_rx->order) {
 
@@ -788,7 +797,9 @@ implementation {
         case RSSI_MEASURE:
           // Almacenar la medida RSSI recivida
           rssiValueReceived = msg_rx->rssiValue;
-          printf("Recibida medida RSSI del nodo %d con valor: %d\n", msg_rx->nodeID, rssiValueReceived);
+          if (!calibrationMode) {
+            printf("Recibida medida RSSI del nodo %d con valor: %d\n", msg_rx->nodeID, rssiValueReceived);
+          }
           printfflush();
           
           if (calibrationMode) {
