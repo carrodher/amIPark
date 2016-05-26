@@ -9,10 +9,12 @@
 
 // Callback para dibujar los círculos
 static gboolean onDrawEvent(GtkWidget *widget, cairo_t *cr, const char *str);
+static void button_cb(GtkWidget *widget,GtkWidget *widget2);
 
 int main(int argc, char **argv) {
 	GtkBuilder *builder;
 	GtkWidget *window;
+	GtkWidget *button;
 	GtkWidget *darea1;
 	GtkWidget *darea2;
 	GtkWidget *darea3;
@@ -29,6 +31,7 @@ int main(int argc, char **argv) {
 
 	/* Objects */
 	window = GTK_WIDGET(gtk_builder_get_object(builder,"window"));
+	button = GTK_WIDGET(gtk_builder_get_object(builder,"button"));
 	darea1 = GTK_WIDGET(gtk_builder_get_object(builder,"darea1"));
 	darea2 = GTK_WIDGET(gtk_builder_get_object(builder,"darea2"));
 	darea3 = GTK_WIDGET(gtk_builder_get_object(builder,"darea3"));
@@ -36,7 +39,9 @@ int main(int argc, char **argv) {
 
 	/* Signals */
 	g_signal_connect(window,"destroy",G_CALLBACK(gtk_main_quit),NULL);
+	g_signal_connect(button,"clicked",G_CALLBACK(button_cb),"Hola");
 	g_signal_connect(darea1, "draw", G_CALLBACK(onDrawEvent), "Plaza 1 ");
+	g_signal_connect(darea1, "button-press-event", G_CALLBACK(button_cb), darea1);
 	g_signal_connect(darea2, "draw", G_CALLBACK(onDrawEvent), "Plaza 2 ");
 	g_signal_connect(darea3, "draw", G_CALLBACK(onDrawEvent), "Plaza 3 ");
 	g_signal_connect(darea4, "draw", G_CALLBACK(onDrawEvent), "Plaza 4 ");
@@ -86,4 +91,10 @@ static gboolean onDrawEvent(GtkWidget *widget, cairo_t *cr, const char *str) {
 	cairo_fill(cr);
 
 	return FALSE;
+}
+
+// Callback para el pulsado de los botones
+static void button_cb(GtkWidget *widget,GtkWidget *widget2) {
+    printf("Hola mundo!\n");
+	gtk_widget_queue_draw(widget2);
 }
