@@ -1,14 +1,17 @@
+#include "../Global.h"
 #include "Movil.h"
-#include <math.h>
 #include "printf.h"
 #include <UserButton.h>
-
+#include <math.h>
 
 module MovilC {
 	uses interface Boot;
 	uses interface Leds;
-	uses interface Timer<TMilli> as Timer0;
-	uses interface Timer<TMilli> as TimerLedRojo;
+	uses interface Timer<TMilli> as VehicleOrderTimer;
+	uses interface Timer<TMilli> as RssiRequestTimer;
+	uses interface Timer<TMilli> as RedTimer;
+	uses interface Timer<TMilli> as GreenTimer;
+	uses interface Timer<TMilli> as BlueTimer;
 	uses interface Packet;
 	uses interface AMPacket;
 	uses interface AMSend;
@@ -16,629 +19,729 @@ module MovilC {
 	uses interface SplitControl as AMControl;
 	uses interface Notify<button_state_t>;
 }
+
 implementation {
-	int16_t rssi = 0;					// Rssi recibido
-	uint16_t master = MASTER_ID;		// 1º slot: id master
-	uint16_t first = FIJO1_ID;			// 2º slot: id fijo 1
-	uint16_t second = FIJO2_ID;			// 3º slot: id fijo 2
-	uint16_t third = FIJO3_ID;			// 4º slot: id fijo 3
-	uint16_t fourth = MOVIL_ID; 		// 5º slot: id movil
-	message_t pkt;        				// Espacio para el pkt a tx
-	bool busy = FALSE;    				// Flag para comprobar el estado de la radio
-	uint16_t contador_3_mensajes= 0;
-	uint16_t localizacion = 0;
+	/* ======== [Variables de la aplicación] ======== */
+	uint8_t     nodeID;                     // Almacena el identificador de este nodo
+	message_t   pkt;			   	              // Espacio para el pkt a tx
+	bool        busy = FALSE;               // Flag para comprobar el estado de la radio
+	uint8_t     status = RESTING;           // Estado de ejecución del programa
+	uint8_t     i;                          // Índice para recorrer bucles for
+	/* ============================================== */
 
-	// Coordenadas de los nodos fijos
-	uint16_t coorm_x = FIJOM_X;
-	uint16_t coorm_y = FIJOM_Y;
 
-	uint16_t coor1_x = FIJO1_X;
-	uint16_t coor1_y = FIJO1_Y;
+	/* =========== [Datos de los anchors] =========== */
+	uint8_t   numberOfAnchors = 0;
+	uint8_t   anchorId [NUMBER_OF_ANCHORS]; // = {MASTER_ID, FIJO_1_ID, FIJO_2_ID, FIJO_3_ID};
+	uint16_t  anchorX  [NUMBER_OF_ANCHORS]; // = {MASTER_X,  FIJO_1_X,  FIJO_2_X,  FIJO_3_X };
+	uint16_t  anchorY  [NUMBER_OF_ANCHORS]; // = {MASTER_Y,  FIJO_1_Y,  FIJO_2_Y,  FIJO_3_Y };
+	/* ============================================== */
 
-	uint16_t coor2_x = FIJO2_X;
-	uint16_t coor2_y = FIJO2_Y;
 
-	uint16_t coor3_x = FIJO3_X;
-	uint16_t coor3_y = FIJO3_Y;
+	/* ========= [Variables de información] ========= */
+	uint8_t   destination;                // Destino del siguiente mensaje a enviar (nodeID/Difusión)
+	uint8_t   orderToSend;                // Almacena la orden a enviar en el siguiente mensaje
+	uint8_t   parkedAt;                   // Id de la plaza en que se aparca (extraData)
+	bool      parked = FALSE;             // Indica si se está aparcado
 
-	// Distancia a nodos fijos Dij
-	float distance_nm = 0;
-	float distance_n1 = 0;
-	float distance_n2 = 0;
-	float distance_n3 = 0;
+	int16_t   rssiValueReceived;                // Medida RECIBIDA de RSSI
+	int16_t   rssiOfAnchor[NUMBER_OF_ANCHORS];  // Medida asociada a cada anchor
 
-	// Pesos wij
-	float w_nm = 0;
-	float w_n1 = 0;
-	float w_n2 = 0;
-	float w_n3 = 0;
+	float     a = -21.593;      // Variables para localización
+	float     b = -50.093;      //
 
-	// Localización del nodo móvil
-	uint16_t movilX = 0;
-	uint16_t movilY = 0;
+	ParkingSpot spot[PARKING_SIZE];       // Vector con información de cada plaza libre recibida
+	uint8_t     numberOfFreeSpots = 0;    // Número de plazas libres
+	/* ============================================== */
 
-   // Constantes para calculo de la distancia
-	float a = -21.593;
-	float b = -50.093;
 
-	bool reserved = FALSE;
+	/* ======= [Variables para localización] ======== */
+	float   distance[NUMBER_OF_ANCHORS];      // Distancia a nodos fijos Dij
+	float   w[NUMBER_OF_ANCHORS];             // Pesos Wij
 
-	bool todos_ocupados = TRUE;
+	uint16_t movilX = 0;                  // Localización del nodo móvil
+	uint16_t movilY = 0;                  //
 
-	uint16_t reserva_rssi = 0;
-
-	uint16_t z = 0;
-
-	uint8_t nodeID;
-
-  /* RSSI en función de la distancia: RSSI(D) = a·log(D)+b */
-
-	/* Exponente que modifica la influencia de la distancia en los pesos.
+	int p = 1;                            /* Exponente que modifica la influencia de la distancia en los pesos.
 	Valores más altos de p dan más importancia a los nodos fijos más cercanos */
-	int p = 1;
+	/* ============================================== */
 
+
+	/* ========= [Declaración de funciones] ========= */
+	float    getDistance(int16_t rssi);
+	float    getWeight(float d);
+	int16_t  computeLocation(float* w_t, uint16_t* c);
+	void     getLocation(int16_t* rssi);
+	void     printfFloat(float floatToBePrinted);
+	void     turnOnLed  (uint8_t led, uint16_t time);
+	void     turnOffLed (uint8_t led);
+	bool     getAssignedSlot (uint8_t slots, nx_uint8_t* slotsOwners, uint8_t* assignedSlot);
+	void     sendVehicleOrderMessage();
+	void     sendBeaconMessage();
+	void     newRssiMeasureReceived(uint8_t nodeId);
+	void     am_i_parked(uint16_t movilXr, uint16_t movilYr);
+	/* ============================================== */
+
+
+	/**
+	*   Evento de pulsación del botón
+	*/
 	event void Notify.notify(button_state_t state) {
-		// Botón pulsado
+		// Comprobar si está pulsado
 		if (state == BUTTON_PRESSED) {
-			// Si no está ocupado forma y envía el mensaje
-			if (!busy) {
-				// Reserva memoria para el paquete
-				LlegadaMsg * pktllegada_tx = (LlegadaMsg*)(call Packet.getPayload(&pkt, sizeof(LlegadaMsg)));
-				//Reserva erronea
-				if(pktllegada_tx == NULL){
-					return;
-				}
+			printf("Pulsado\n");
+			printfflush();
 
-				/*** MENSAJE TRAS PULSAR EL BOTON ***/
-
-				//Forma el paquete
-				pktllegada_tx->ID_movil = nodeID;
-				pktllegada_tx->orden = ORDEN_INICIAL;
-
-				//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LlegadaMsg)) == SUCCESS){
-					//						|-> Destino = Difusión
-					busy = TRUE;	// Ocupado
-					// Enciende los 3 leds cuando envía el paquete que organiza los slots
-					printf("He llegado al parking, solicito informacion sobre las plazas\n");
-					printfflush();
-					call Leds.led0On();
-					call Leds.led1On();
-					call Leds.led2On();
-				}
-			}
+			// Cambiar a estado para solicitar un slot de comunicación con el master
+			status = WAITING_FOR_COMM_SLOT;
 		}
-		// Botón no pulsado
 		else if (state == BUTTON_RELEASED) {
-			call Leds.led0Off();
-			call Leds.led1Off();
-			call Leds.led2Off();
+			// Nada que hacer
+		}
+	}
+
+
+	/**
+	*   Calcula la distancia a partir del RSSI
+	*   Fórmula: RSSI(D) = a·log(D) + b; D = 10^((RSSI-b)/a)
+	*/
+	float getDistance(int16_t rssi) {
+		float rssi_float = (float) rssi;      // Convertir RSSI a float
+		return powf(10, (rssi_float-b)/a );
+	}
+
+
+	/**
+	*   Calcula el peso: w = 1/(D^p)
+	*/
+	float getWeight(float d) {
+		return 1/(powf(d,p));
+	}
+
+
+	/**
+	*   Calcula una coordenada referente a la localización del nodo
+	*   Parámetros: vector de pesos y coordenadas (x o y)
+	*   Fórmula:
+	*     X = (wm·xm + w1·x1 + w2·x2 + w3·x3)/(wm + w1 + w2 + w3)
+	*     Y = (wm·ym + w1·y1 + w2·y2 + w3·y3)/(wm + w1 + w2 + w3)
+	*/
+	int16_t computeLocation(float* w_t, uint16_t* c) {
+		// Variables temporales de cálculo
+		float numerator   = 0;
+		float denominator = 0;
+
+		for (i=0 ; i<numberOfAnchors ; i++) {
+			numerator   += w_t[i]*c[i];
+			denominator += w_t[i];
+		}
+
+		return numerator/denominator;
+	}
+
+
+
+	/**
+	*   Comprueba si esta aparcado en una de las plazas de aparcamiento
+	*   Devuelve 0 si no esta aparcado
+	*/
+	void am_i_parked(uint16_t movilXr, uint16_t movilYr) {
+		// Recorrer los datos de cada plaza libre disponible
+		for (i=0 ; i<numberOfFreeSpots ; i++) {
+			// Comparar la posición actual con la de la plaza
+			if ( movilXr <= (spot[i].x + ERROR) && movilXr >= (spot[i].x - ERROR) && movilYr <= (spot[i].y + ERROR) && movilYr >= (spot[i].y - ERROR) ) {
+				parkedAt = spot[i].id;    // Guardar ID de la plaza en que se ha aparcado
+				parked   = TRUE;          // Se ha aparcado
+				status   = PARKED;        // Pasar al estado "Aparcado"
+
+				printf("He aparcado en la plaza %d\n", parkedAt);
+				printfflush();
+			}
 		}
 	}
 
 
 
-	// Se ejecuta al alimentar t-mote. Arranca la radio
-	event void Boot.booted() {
-		call AMControl.start();
-		call Notify.enable();		// Botón
-		nodeID = TOS_NODE_ID;
-		printf("Este es mi ID %d\n", nodeID);
+	/**
+	*   Obtiene la localización del nodo y la almacena en las variables globales movilX y movilY
+	*   Devuelve verdadero si fue correcta la operación
+	*/
+	void getLocation(int16_t* rssi) {
+		// Calcular las distancias y pesos de cada anchor
+		for (i=0 ; i<numberOfAnchors ; i++) {
+			distance[i] = getDistance(rssi[i]);       // Obtener distancia al nodo
+			w[i]        = getWeight(distance[i]);     // Obtener peso relativo
+		}
+
+		// Calcular las coordenadas del movil y almacenarlas
+		movilX = computeLocation(w,anchorX);
+		movilY = computeLocation(w,anchorY);
+
+		printf("[INFO] Nueva localizacion: x=%d, y=%d\n", movilX, movilY);
+		printfflush();
+
+		am_i_parked(movilX, movilY);
+	}
+
+
+
+
+	/**
+	*   Usa printf() para imprimir un flotante
+	*/
+	void printfFloat(float floatToBePrinted) {
+		uint32_t fi, f0, f1, f2, f3;
+		char c;
+		float f = floatToBePrinted;
+
+		if (f<0){
+			c = '-';    // Añade signo negativo
+			f = -f;     // Invertir signo al flotante
+		}
+		else {
+			c = ' ';    // Añade signo "Positivo"
+		}
+
+		// Obtener parte entera
+		fi = (uint32_t) f;
+
+		// Parte decimal (4 decimales)
+		f  = f - ((float) fi);          // Restar parte entera
+		f0 = f*10;    f0 %= 10;
+		f1 = f*100;   f1 %= 10;
+		f2 = f*1000;  f2 %= 10;
+		f3 = f*10000; f3 %= 10;
+		printf("%c%ld.%d%d%d%d", c, fi, (uint8_t) f0, (uint8_t) f1, (uint8_t) f2, (uint8_t) f3);
 		printfflush();
 	}
 
-	/* Si la radio está encendida arranca el temporizador.
-	Arranca la radio si la primera vez hubo algún error */
-	event void AMControl.startDone(error_t err) {
-		if (err == SUCCESS) {
+
+
+	/**
+	*   Enciende el led indicado (y lo apaga pasado el tiempo especificado en ms)
+	*   Si timeOn = 0 no se apagará el led
+	*/
+	void turnOnLed (uint8_t led, uint16_t timeOn) {
+		switch (led) {
+			case RED:
+				call Leds.led0On();
+				if (timeOn > 0)
+					call RedTimer.startOneShot(timeOn);
+				break;
+			case GREEN:
+				call Leds.led1On();
+				if (timeOn > 0)
+					call GreenTimer.startOneShot(timeOn);
+				break;
+			case BLUE:
+				call Leds.led2On();
+				if (timeOn > 0)
+					call BlueTimer.startOneShot(timeOn);
+				break;
+		}
+	}
+
+
+
+	/**
+	*   Apaga el led indicado
+	*/
+	void turnOffLed (uint8_t led) {
+		switch (led) {
+			case RED:
+				call Leds.led0Off();
+				break;
+			case GREEN:
+				call Leds.led1Off();
+				break;
+			case BLUE:
+				call Leds.led2Off();
+				break;
+		}
+	}
+
+
+
+	/**
+	*   Devuelve verdadero si se tiene un slot asignado a este nodo (a su ID) y su número por referencia
+	*/
+	bool getAssignedSlot (uint8_t slots, nx_uint8_t* slotsOwners, uint8_t* assignedSlot) {
+
+		// Flag
+		bool hasAssignedSlot = FALSE;
+
+		// Índice para recorrer el vector slotsOwners
+		uint8_t slotId;
+
+		for (slotId = 0 ; slotId<slots ; slotId++) {
+			if (slotsOwners[slotId] == nodeID) {
+				// Afirmar que se tiene un slot
+				hasAssignedSlot = TRUE;
+				// Y guardar el slot asignado en la variable pasada por referencia
+				*assignedSlot = slotId;
+			}
+		}
+
+		return hasAssignedSlot;
+	}
+
+
+
+	/**
+	*   Envia un mensaje de tipo VehicleOrder
+	*   Usar variable "destination" para indicar el destino: AM_BROADCAST_ADDR para difussión, en cualquier otro caso el nodeID destino
+	*/
+	void sendVehicleOrderMessage() {
+
+		uint16_t messageLength = 0;       // Almacenará el tamaño del mensaje a enviar
+		VehicleOrder* msg_tx = NULL;      // Necesario crear el puntero previamente
+
+		// Reserva memoria para el paquete
+		messageLength = sizeof(VehicleOrder);
+		msg_tx = (VehicleOrder*) call Packet.getPayload(&pkt, messageLength);
+
+		// Comprobar que se realizó la reserva de memoria correctamente
+		if (msg_tx == NULL) {
+			printf("[ERROR] Reserva de memoria\n");
+			printfflush();
 		}
 		else {
+			// Añadir el id del nodo origen
+			msg_tx->nodeID  = nodeID;
+
+			// Añadir la orden
+			msg_tx->order = orderToSend;
+
+			// Adjuntar datos adicionales según la orden especificada
+			switch (orderToSend) {
+				case COMM_SLOT_REQUEST:
+					// Nada que adjuntar
+					break;
+				case PARKING_INFO_REQUEST:
+					// Nada que adjuntar
+					break;
+				case SPOT_TAKEN_UP:
+					// Adjuntar el ID de la plaza ocupada
+					msg_tx->extraData = parkedAt;
+					break;
+				case SPOT_RELEASED:
+					// Adjuntar el ID de la plaza liberada
+					msg_tx->extraData = parkedAt;
+					break;
+			}
+
+			// Comprobar que no esté ocupado el transmisor
+			if (!busy) {
+				// Enviar y comprobar el resultado
+				if(call AMSend.send(destination, &pkt, messageLength) == SUCCESS) {
+					busy = TRUE;      // Ocupado
+					printf("[DEBUG] Enviado mensaje VehicleOrder / Orden: %d\n", orderToSend);
+					printfflush();
+					// Notificación visual de envio de mensaje
+					turnOnLed(RED, LED_BLINK_TIME);
+				}
+				else {
+					printf("[ERROR] Mensaje no enviado\n");
+					printfflush();
+				}
+			}
+			else {
+				printf("[ERROR] Bussy\n");
+				printfflush();
+			}
+		}
+	}
+
+
+
+	/**
+	*   Envia un mensaje de tipo TdmaRssiRequestFrame a difusión
+	*   Se trata de la trama que indica a los anchors (fijos y master) cuando pueden enviar la medida RSSI de este mismo mensaje
+	*/
+	void sendTdmaRssiRequestMessage() {
+
+		uint16_t messageLength = 0;               // Almacenará el tamaño del mensaje a enviar
+		TdmaRssiRequestFrame* msg_tx = NULL;      // Necesario crear el puntero previamente
+
+		// Reserva memoria para el paquete
+		messageLength = sizeof(TdmaRssiRequestFrame);
+		msg_tx = (TdmaRssiRequestFrame*) call Packet.getPayload(&pkt, messageLength);
+
+		// Comprobar que se realizó la reserva de memoria correctamente
+		if (msg_tx == NULL) {
+			printf("[ERROR] Reserva de memoria\n");
+			printfflush();
+		}
+		else {
+
+			// Añadir el id del nodo origen
+			msg_tx->nodeID  = nodeID;
+
+			// Añadir el número de slots actualmente en uso y el tiempo reservado a cada cual
+			msg_tx->slots = numberOfAnchors;
+			msg_tx->tSlot = TDMA_RSSI_REQUEST_SLOT_TIME;
+			msg_tx->x = movilX;
+			msg_tx->y = movilY;
+
+			// Asignar los slots a los IDs correspondientes
+			for (i=0 ; i<numberOfAnchors ; i++) {
+				msg_tx->slotsOwners[i] = anchorId[i];
+			}
+
+			// Comprobar que no esté ocupado el transmisor
+			if (!busy) {
+				// Enviar y comprobar el resultado
+				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, messageLength) == SUCCESS) {
+					busy = TRUE;      // Ocupado
+					printf("[DEBUG] Enviado mensaje TdmaRssiRequestFrame\n");
+					printfflush();
+					// Notificación visual de envio de mensaje
+					turnOnLed(RED, LED_BLINK_TIME);
+				}
+				else {
+					printf("[ERROR] Mensaje no enviado\n");
+					printfflush();
+				}
+			}
+			else {
+				printf("[ERROR] Bussy\n");
+				printfflush();
+			}
+		}
+	}
+
+
+
+	/**
+	*   Mensaje recibido
+	*/
+	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t length) {
+		// Vector de IDs asociados a cada slot ofrecido en una trama TDMA
+		uint8_t assignedSlot;
+
+		// Notificación visual de recepción de mensaje
+		turnOnLed(GREEN, LED_BLINK_TIME);
+
+		/* ---------------------------------------- *
+		*  DETERMINAR EL TIPO DE MENSAJE RECIBIDO  *
+		* ---------------------------------------- */
+
+		// >>>> RssiMsg <<<<
+		if (length == sizeof(RssiMsg)) {
+			// Extraer el payload
+			RssiMsg* msg_rx = (RssiMsg*)payload;
+
+			printf("Recibido: RssiMsg / Orden: %d\n", msg_rx->order);
+			printfflush();
+
+			// Determinar la orden recibida
+			switch (msg_rx->order) {
+				case RSSI_MEASURE:
+					// Almacenar la medida RSSI recivida
+					rssiValueReceived = msg_rx->rssiValue;
+					printf("Recibida medida RSSI del nodo %d con valor: %d\n", msg_rx->nodeID, rssiValueReceived);
+					printfflush();
+					// Tratar la nueva medida
+					newRssiMeasureReceived(msg_rx->nodeID);
+					break;
+			}
+		}
+		// >>>> TdmaBeaconFrame <<<<
+		else if (length == sizeof(TdmaBeaconFrame)) {
+			// Extraer el payload
+			TdmaBeaconFrame* msg_rx = (TdmaBeaconFrame*)payload;
+
+			printf("Recibido: TdmaBeaconFrame | status=%d\n", status);
+			printfflush();
+
+			// Si se tiene un slot asociado...
+			if (getAssignedSlot(msg_rx->slots, msg_rx->slotsOwners, &assignedSlot)) {
+				printf("Se tiene el slot: %d\n", assignedSlot);
+				printfflush();
+
+				// Reaccionar en función del estado actual del programa
+				switch (status) {
+					case RESTING:
+						// Nada que hacer
+						break;
+					case WAITING_FOR_COMM_SLOT:
+						// Si se llega aquí es porque se ha conseguido un slot para transmitir
+						// Comprobar si se está ocupando ya una plaza del parking
+						if(!parked) {
+							// Si no esta aparcado, el siguiente paso sería solicitar la informacion del parking
+							status = REQUESTING_PARKING_INFO;
+						}
+						else {
+							// Si esta aparcado, al darle al boton lo que quiere es liberar la plaza y salir del parking
+							status = DRIVE_OFF;
+						}
+						break;
+					case REQUESTING_PARKING_INFO:
+						// Solicitar al master información del parking
+						numberOfFreeSpots = 0;                    // Resetear variables que se han de deducir de los datos a recibir
+						numberOfAnchors   = 0;                    //
+						destination = msg_rx->nodeID;             // Destino el nodo master que envió el beacon
+						orderToSend = PARKING_INFO_REQUEST;       // Orden de solicitud de información del parking
+						// Enviar orden de solicitud de información del parking
+						call VehicleOrderTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
+						break;
+					case LOCATING:
+						// Resetear acumulador de medidas RSSI
+						for (i=0 ; i<numberOfAnchors ; i++) {
+							rssiOfAnchor[i] = 0;
+						}
+						// Preparar el siguiente envio de la trama tdma de petición de medida RSSI
+						call RssiRequestTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
+						break;
+					case PARKED:
+						destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
+						orderToSend = SPOT_TAKEN_UP;        // Orden de solicitud de slot de comunicación
+						// Enviar orden de solicitud de ocupación de una plaza
+						call VehicleOrderTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
+						break;
+					case DRIVE_OFF:
+						printf("Estoy abandonando la plaza %d\n", parkedAt);
+						printfflush();
+						destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
+						orderToSend = SPOT_RELEASED;        // Orden de solicitud de slot de comunicación
+						parked = FALSE;                     // Ya no se tendría ninguna plaza de parking
+						// Enviar orden de solicitud de liberación de una plaza
+						call VehicleOrderTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
+						break;
+				}
+			}
+			else {
+				printf("No se tiene slot asociado\n");
+				printfflush();
+
+				// Reaccionar en función del estado actual del programa
+				switch (status) {
+					case RESTING:
+						// Nada que hacer
+						break;
+					case WAITING_FOR_COMM_SLOT:
+						// Enviar solicitud de reserva de slot para comunicación con el master
+						destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
+						orderToSend = COMM_SLOT_REQUEST;    // Orden de solicitud de slot de comunicación
+						// Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
+						call VehicleOrderTimer.startOneShot( (msg_rx->slots)*(msg_rx->tSlot) + nodeID/10 );
+						break;
+					case REQUESTING_PARKING_INFO:
+						// Si se llega aquí sería por que se perdió por algún motivo el slot de comunicación, volver a pedirlo
+						status = WAITING_FOR_COMM_SLOT;
+						break;
+					case LOCATING:
+						// Si se llega aquí sería por que se perdió por algún motivo el slot de comunicación, volver a pedirlo
+						status = WAITING_FOR_COMM_SLOT;
+						break;
+					case PARKED:
+						// Nada que hacer
+						break;
+				}
+			}
+		}
+		// >>>> UpdateConstants <<<<
+		else if (length == sizeof(UpdateConstants)) {
+			// Extraer el payload
+			UpdateConstants* msg_rx = (UpdateConstants*)payload;
+
+			printf("Recibido: UpdateConstants");
+			printfflush();
+
+			a = msg_rx->a;
+			b = msg_rx->b;
+			// Extraer los datos asociados "a" y "b"
+			printf(" | a="); printfFloat(a); printf(" b="); printfFloat(b); printf("\n");
+			printfflush();
+		}
+		// >>>> ParkingInfo <<<<
+		else if (length == sizeof(ParkingInfo)) {
+			// Extraer el payload
+			ParkingInfo* msg_rx = (ParkingInfo*)payload;
+
+			printf("Recibido: ParkingInfo / Orden: %d\n", msg_rx->order);
+			printfflush();
+
+			// Determinar la orden recibida
+			switch (msg_rx->order) {
+				case PARKING_SPOT:
+					// Almacenar la nueva plaza de parking libre recibida
+					spot[numberOfFreeSpots].id = msg_rx->id;
+					spot[numberOfFreeSpots].x  = msg_rx->x;
+					spot[numberOfFreeSpots].y  = msg_rx->y;
+					numberOfFreeSpots++;      // Contabilizar una nueva plaza libre
+					status = LOCATING;        // Como se tiene al menos una plaza, el siguiente estado será el de solicitar localización
+					printf("Recibida plaza libre con id: %d [x=%d / y=%d]\n", msg_rx->id, msg_rx->x, msg_rx->y);
+					printfflush();
+					break;
+				case ANCHOR_POSITION:
+					// Almacenar el nuevo anchor recibido
+					anchorId[numberOfAnchors] = msg_rx->id;
+					anchorX[numberOfAnchors]  = msg_rx->x;
+					anchorY[numberOfAnchors]  = msg_rx->y;
+					numberOfAnchors++;        // Contabilizar un nuevo anchor
+					printf("Recibida informacion del anchor con id: %d [x=%d / y=%d]\n", msg_rx->id, msg_rx->x, msg_rx->y);
+					printfflush();
+					break;
+				case NO_SPOTS_AVAILABLE:
+					// El parking no tiene plazas libres
+					printf("Master informa de que no hay plazas libres\n");
+					printfflush();
+					// Volver al estado de reposo
+					status = RESTING;
+					turnOnLed(RED,2000);
+					turnOnLed(GREEN,2000);
+					break;
+			}
+		}
+		else {
+			printf("[ERROR] Recibido mensaje de tipo desconocido\n");
+			printfflush();
+		}
+		return msg;
+	}
+
+
+
+	/**
+	*   Se ejecuta cada vez que se recibe una medida RSSI de uno de los nodos fijos
+	*/
+	void newRssiMeasureReceived(uint8_t nodeId) {
+		// Flags
+		bool allMeasuresReceived = TRUE;    // Indica si se tienen todas las medidas
+		bool error               = TRUE;    // Indica si hubo algún error
+
+		// Por cada anchor tenido en cuenta...
+		for (i=0 ; i<numberOfAnchors ; i++) {
+			// Encontrado el nodo del cual se ha recibido una medida RSSI
+			if (anchorId[i] == nodeId) {
+				rssiOfAnchor[i] = rssiValueReceived;  // Asociar la medida al nodo
+				error = FALSE;                        // La medida se ha asociado al nodo esperado, no hay fallos
+			}
+			// Comprobar además si se tiene la medida de cada nodo ya
+			if (rssiOfAnchor[i] == 0) {
+				allMeasuresReceived = FALSE;          // Al menos una de las medidas aun no se ha recibido
+			}
+		}
+
+		// Si ya se tienen todas las medidas...
+		if (allMeasuresReceived) {
+			getLocation(rssiOfAnchor);              // Obtener la localización del nodo
+		}
+
+		if (error) {
+			printf("[ERROR] Recibida medida RSSI que no se corresponde con ningún anchor\n");
+			printfflush();
+		}
+	}
+
+
+
+	/**
+	*   Se ejecuta al alimentar t-mote. Arranca la radio
+	*/
+	event void Boot.booted() {
+		call AMControl.start();
+		call Notify.enable();
+
+		// Obtenemos el ID de este nodo
+		nodeID = TOS_NODE_ID;
+		printf("nodeID=%d\n", nodeID);
+		printfflush();
+
+		// Inicializar variables
+		for (i=0 ; i<NUMBER_OF_ANCHORS ; i++) {
+			rssiOfAnchor[i] = 0;
+		}
+
+		// Inicializar el vector con la información de las plazas de aparcamiento
+		/*    for (i=0 ; i<PARKING_SIZE ; i++) {
+		parkingStatus.spot[i].id  = spotId[i];
+		parkingStatus.spot[i].x   = spotX [i];
+		parkingStatus.spot[i].y   = spotY [i];
+		parkingStatus.free[i]     = TRUE;
+		}*/
+
+		// Notificar visualmente que el mote está encendido
+		turnOnLed(BLUE,0);
+	}
+
+
+
+	/**
+	*   Arranca la radio si la primera vez hubo algún error
+	*/
+	event void AMControl.startDone(error_t err) {
+		if (err != SUCCESS) {
 			call AMControl.start();
 		}
 	}
 
+
+
+	/**
+	*   Detención de la radio
+	*/
 	event void AMControl.stopDone(error_t err) {
+		// Nada que hacer
 	}
 
 
-	void sendMsgRSSI(){
-		//ENVIA MENSAJE PARA RECIBIR RSSI
-		if(!busy){
-			MovilMsg* pktmovil_tx = (MovilMsg*)(call Packet.getPayload(&pkt, sizeof(MovilMsg)));
 
-			// Reserva errónea
-			if (pktmovil_tx == NULL) {
-				return;
-			}
-			//Forma el paquete
-			// Campo 1: nodeID
-			pktmovil_tx->ID_movil = nodeID;
-			// Campo 2: Tslot
-			pktmovil_tx->Tslot = TIMER_PERIOD_MILLI/SLOTS;
-			// Campos 3, 4, 5 y 6: Orden de los slots
-			pktmovil_tx->master = master;
-			pktmovil_tx->first = first;
-			pktmovil_tx->second = second;
-			pktmovil_tx->third = third;
-			// Campo 6: Último slot siempre para el movil
-			pktmovil_tx->fourth = fourth;
-
-			reserva_rssi = 0;
-
-			// Envía
-			if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(MovilMsg)) == SUCCESS) {
-				//						|-> Destino = Difusión
-				localizacion = 1;
-				busy = TRUE;
-				// Enciende los 3 leds cuando envía el paquete que organiza los slots
-				call Leds.led0On();
-				call Leds.led1On();
-				call Leds.led2On();
-			}
-		}
-	}
-
-	// Comprueba la tx del pkt y marca como libre si ha terminado
+	/**
+	*   Completada transmisión de mensaje
+	*/
 	event void AMSend.sendDone(message_t* msg, error_t err) {
 		if (&pkt == msg) {
-			busy = FALSE;	// Libre
-		}
-		if(reserva_rssi == 1){
-			sendMsgRSSI();
-			reserva_rssi=0;
-		}
-		if(localizacion == 1){
-			localizacion=0;
-		}
-
-	}
-
-	//Funcion que enciende y apaga luz durante un tiempo determinado
-	event void TimerLedRojo.fired(){
-		if (call Leds.get() & LEDS_LED1){
-			call Leds.led1Off();
-		}
-	}
-	event void Timer0.fired(){
-		sendMsgRSSI();
-	}
-
-	// Enciende los leds según el nodo emisor
-	void turnOnLeds(int16_t nodo) {
-		// Determina el emisor del mensaje recibido
-		if (nodo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
-			// Enciende los leds para notificar la llegada de un paquete
-			call Leds.led0On();   	// Led 0 On para fijo 1
-			call Leds.led1Off();	// Led 0 Off
-			call Leds.led2Off();  	// Led 0 Off
-		}
-		else if (nodo == FIJO2_ID) {		//Nos ha llegado un paquete del nodo fijo 2
-			// Enciende los leds para notificar la llegada de un paquete
-			call Leds.led0Off();   	// Led 0 Off
-			call Leds.led1On();    	// Led 1 On para fijo 2
-			call Leds.led2Off();	// Led 2 Off
-		}
-		else if (nodo == FIJO3_ID) {
-			// Enciende los leds para notificar la llegada de un paquete
-			call Leds.led0Off();   	// Led 0 Off
-			call Leds.led1Off();   	// Led 1 Off
-			call Leds.led2On();    	// Led 2 On para fijo 3
-		}
-		else if (nodo == MASTER_ID){
-			// Enciende los leds para notificar la llegada de un paquete
-			call Leds.led0On();   	// Led 0 On
-			call Leds.led1On();   	// Led 1 On
-			call Leds.led2On();    	// Led 2 On para master
+			busy = FALSE;     // Libre
 		}
 	}
 
-	// Fórmula para obtener la distancia a partir del RSSI, se llama una vez por cada nodo fijo
-	float getDistance(int16_t rssiX){
-        // Convertir RSSI a float
-		float rssi_float = (float) rssiX;
-		/* Fórmula: RSSI(D) = a·log(D) + b; D = 10^((RSSI-b)/a) */
-		return 100 * powf(10, (rssi_float-b)/a );
+
+
+	/**
+	*   Activación del temporizador VehicleOrderTimer
+	*/
+	event void VehicleOrderTimer.fired() {
+		sendVehicleOrderMessage();
 	}
 
 
-	// Fórmula para obtener el peso, se llama una vez por cada nodo fijo
-	float getWeigth(float distance, int pvalue) {
-		/* Fórmula:
-			w = 1/(D^p) */
-		return 1/(powf(distance,pvalue));
+
+	/**
+	*   Activación del temporizador RssiRequestTimer
+	*/
+	event void RssiRequestTimer.fired() {
+		sendTdmaRssiRequestMessage();
 	}
 
-	int16_t calculateLocation(float wm, float w1, float w2, float w3, uint16_t cm, uint16_t c1, uint16_t c2, uint16_t c3) {
-		/* Fórmula:
-			X = (wm·xm + w1·x1 + w2·x2 + w3·x3)/(wm + w1 + w2 + w3)
-			Y = (wm·ym + w1·y1 + w2·y2 + w3·y3)/(wm + w1 + w2 + w3) */
-			return (wm*cm + w1*c1 + w2*c2 + w3*c3)/(wm + w1 + w2 + w3);
-		}
 
-		void sendParkedState(int i){
 
-			printf("He aparcado en la plaza %d \n",i);
-			printfflush();
-
-			if(i == 1){
-
-				if(!busy){
-
-				// Reserva memoria para el paquete
-					SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-				// Reserva errónea
-					if (pktsitioslibres_tx == NULL) {
-						return;
-					}
-					pktsitioslibres_tx->movilAsociado = nodeID;
-					pktsitioslibres_tx->estado = OCUPADO;
-					pktsitioslibres_tx->ID_plaza = i;
-					pktsitioslibres_tx->coorX = COORD_APARC_X1;
-					pktsitioslibres_tx->coorY = COORD_APARC_Y1;
-				//Envía
-					if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-				}
-			}
-
-		}else if(i == 2){
-
-			if(!busy){
-				// Reserva memoria para el paquete
-				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-				// Reserva errónea
-				if (pktsitioslibres_tx == NULL) {
-					return;
-				}
-				pktsitioslibres_tx->movilAsociado = nodeID;
-				pktsitioslibres_tx->estado = OCUPADO;
-				pktsitioslibres_tx->ID_plaza = i;
-				pktsitioslibres_tx->coorX = COORD_APARC_X2;
-				pktsitioslibres_tx->coorY = COORD_APARC_Y2;
-
-				//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-				}
-			}
-
-		}else if(i == 3){
-
-			if(!busy){
-				// Reserva memoria para el paquete
-				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-				// Reserva errónea
-				if (pktsitioslibres_tx == NULL) {
-					return;
-				}
-				pktsitioslibres_tx->movilAsociado = nodeID;
-				pktsitioslibres_tx->estado = OCUPADO;
-				pktsitioslibres_tx->ID_plaza = i;
-				pktsitioslibres_tx->coorX = COORD_APARC_X3;
-				pktsitioslibres_tx->coorY = COORD_APARC_Y3;
-
-				//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-				}
-			}
-		}
-
+	/**
+	*   Activación del temporizador RedTimer
+	*/
+	event void RedTimer.fired() {
+		// Apagar el led rojo
+		turnOffLed(RED);
 	}
 
-	bool am_i_parked(uint16_t movilXr, uint16_t movilYr){
-		bool parked = FALSE;
-		uint16_t j = 0;
-		if(movilXr <= (COORD_APARC_X1+ERROR) && movilXr >= (COORD_APARC_X1-ERROR) && movilYr <= (COORD_APARC_Y1+ERROR) && movilYr >= (COORD_APARC_Y1-ERROR)){
-			j = 1;
-			sendParkedState(j);
-			parked = TRUE;
-		}else if(movilXr <= (COORD_APARC_X2+ERROR) && movilXr >= (COORD_APARC_X2-ERROR) && movilYr <= (COORD_APARC_Y2+ERROR) && movilYr >= (COORD_APARC_Y2-ERROR)){
-			j = 2;
-			sendParkedState(j);
-			parked = TRUE;
-		}else if(movilXr <= (COORD_APARC_X3+ERROR) && movilXr >= (COORD_APARC_X3-ERROR) && movilYr <= (COORD_APARC_Y3+ERROR) && movilYr >= (COORD_APARC_Y3-ERROR)){
-			j = 3;
-			sendParkedState(j);
-			parked = TRUE;
-		}
-		return parked;
+
+
+	/**
+	*   Activación del temporizador GreenTimer
+	*/
+	event void GreenTimer.fired() {
+		// Apagar el led verde
+		turnOffLed(GREEN);
 	}
 
-	void sendReservedState (int i){
+	
 
-		//printf("He reservado la plaza %d con ID %d \n",i, APARC1_ID);
-		//printfflush();
-
-		if (i == 1){
-
-			if(!busy){
-				// Reserva memoria para el paquete
-				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-				// Reserva errónea
-				if (pktsitioslibres_tx == NULL) {
-					return;
-				}
-				pktsitioslibres_tx->movilAsociado = nodeID;
-				pktsitioslibres_tx->estado = RESERVADO;
-				pktsitioslibres_tx->ID_plaza = APARC1_ID;
-				pktsitioslibres_tx->coorX = COORD_APARC_X1;
-				pktsitioslibres_tx->coorY = COORD_APARC_Y1;
-
-
-				//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-					reserva_rssi = 1;
-				}
-			}
-
-			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-			//sendMsgRSSI();
-		}else if(i == 2){
-
-			if(!busy){
-				// Reserva memoria para el paquete
-				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-				// Reserva errónea
-				if (pktsitioslibres_tx == NULL) {
-					return;
-				}
-				pktsitioslibres_tx->movilAsociado = nodeID;
-				pktsitioslibres_tx->estado = RESERVADO;
-				pktsitioslibres_tx->ID_plaza = APARC2_ID;
-				pktsitioslibres_tx->coorX = COORD_APARC_X2;
-				pktsitioslibres_tx->coorY = COORD_APARC_Y2;
-				//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-					reserva_rssi = 1;
-				}
-			}
-
-			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-			//sendMsgRSSI();
-
-		}else if(i == 3){
-
-			if(!busy){
-			// Reserva memoria para el paquete
-				SitiosLibresMsg* pktsitioslibres_tx = (SitiosLibresMsg*)(call Packet.getPayload(&pkt, sizeof(SitiosLibresMsg)));
-
-			// Reserva errónea
-				if (pktsitioslibres_tx == NULL) {
-					return;
-				}
-				pktsitioslibres_tx->movilAsociado = nodeID;
-				pktsitioslibres_tx->estado = RESERVADO;
-				pktsitioslibres_tx->ID_plaza = APARC3_ID;
-				pktsitioslibres_tx->coorX = COORD_APARC_X3;
-				pktsitioslibres_tx->coorY = COORD_APARC_Y3;
-			//Envía
-				if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(SitiosLibresMsg)) == SUCCESS){
-					busy = TRUE;	// Ocupado
-					reserva_rssi = 1;
-				}
-			//Si ha encontrado sitio libre, manda mensaje para recibir RSSI y calcular posicion
-			//sendMsgRSSI();
-			}
-		}
-	}
-
-// Recibe un mensaje de cualquiera de los nodos fijos, el primer mensaje tiene que ser del master
-	event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
-
-		bool parked2 = FALSE;
-
-			call Leds.led0Off();   	// Led 0 Off
-			call Leds.led1Off();   	// Led 1 Off
-			call Leds.led2Off();    // Led 2 Off
-
-			if (len == sizeof(FijoMsg)) {
-				FijoMsg* pktfijo_rx = (FijoMsg*)payload;		// Extrae el payload
-				printf("Me llega un mensaje fijo con id %d\n", pktfijo_rx->ID_fijo);
-				printfflush();
-
-				// Determina el emisor del mensaje recibido
-				if (pktfijo_rx->ID_fijo == MASTER_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
-					// Enciende los leds para notificar la llegada de un paquete
-					turnOnLeds(pktfijo_rx->ID_fijo);
-					printf("He recibido rssi del nodo master\n");
-					printfflush();
-					rssi = pktfijo_rx->medidaRssi;
-					// Calcula la distancia al nodo master en base al RSSI
-					distance_nm = getDistance(rssi);
-					// Calcula el peso del nodo 1
-					w_nm = getWeigth(distance_nm,p);
-				}
-				else if (pktfijo_rx->ID_fijo == FIJO1_ID) { 			//Nos ha llegado un paquete del nodo fijo 1
-					// Enciende los leds para notificar la llegada de un paquete
-					turnOnLeds(pktfijo_rx->ID_fijo);
-					printf("He recibido rssi del nodo 1\n");
-					printfflush();
-					rssi = pktfijo_rx->medidaRssi;
-					// Calcula la distancia al nodo 1 en base al RSSI
-					distance_n1 = getDistance(rssi);
-					// Calcula el peso del nodo 1
-					w_n1 = getWeigth(distance_n1,p);
-				}
-				else if (pktfijo_rx->ID_fijo == FIJO2_ID) {		//Nos ha llegado un paquete del nodo fijo 2
-					// Enciende los leds para notificar la llegada de un paquete
-					turnOnLeds(pktfijo_rx->ID_fijo);
-					printf("He recibido rssi del nodo 2\n");
-					printfflush();
-					rssi = pktfijo_rx->medidaRssi;
-					// Calcula la distancia al nodo 2 en base al RSSI
-					distance_n2 = getDistance(rssi);
-					// Calcula el peso del nodo 2
-					w_n2 = getWeigth(distance_n2,p);
-				}
-				else if (pktfijo_rx->ID_fijo == FIJO3_ID) {		//Nos ha llegado un paquete del nodo fijo 3
-					// Enciende los leds para notificar la llegada de un paquete
-					turnOnLeds(pktfijo_rx->ID_fijo);
-					printf("He recibido rssi del nodo 3\n");
-					printfflush();
-					rssi = pktfijo_rx->medidaRssi;
-					// Calcula la distancia al nodo 3 en base al RSSI
-					distance_n3 = getDistance(rssi);
-					// Calcula el peso del nodo 3
-					w_n3 = getWeigth(distance_n3,p);
-
-					/* Llegados a este punto ya tenemos TODOS los datos de los nodos fijos,
-					así que podemos calcular la localizacón del nodo móvil y enviar el resultado*/
-					// Calculamos la coordenada X del nodo móvil
-					movilX = calculateLocation(w_nm,w_n1,w_n2,w_n3,coorm_x,coor1_x,coor2_x,coor3_x);
-					// Calculamos la coordenada Y del nodo móvil
-					movilY = calculateLocation(w_nm,w_n1,w_n2,w_n3,coorm_y,coor1_y,coor2_y,coor3_y);
-
-					printf("Ahora mismo estoy en: (%d, %d) \n",movilX, movilY);
-					printfflush();
-
-					parked2 = am_i_parked(movilX,movilY);
-					if (parked2 == TRUE){
-						call Leds.led0On();
-						call Leds.led1Off();
-						call Leds.led2Off();
-						printf("APARCADO!\n");
-						call Timer0.stop();
-						reserved = FALSE;
-						printfflush();
-					}else{
-						// Borrar este else despues de depurar!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-						printf("NO APARCADO!\n");
-						printfflush();
-						sendMsgRSSI();
-					}
-
-					// Mandamos las coordenadas calculadas a difusión para que pueda verlo la Base Station
-					if (!busy) {
-						// Reserva memoria para el paquete
-						LocationMsg* pktmovil_loc = (LocationMsg*)(call Packet.getPayload(&pkt, sizeof(LocationMsg)));
-
-						// Reserva errónea
-						if (pktmovil_loc == NULL) {
-							return 0;
-						}
-
-						/*** FORMA EL PAQUETE ***/
-						// Campo 1: nodeID
-						pktmovil_loc->ID_movil = nodeID;
-						// Campo 2: Coordenada X
-						pktmovil_loc->coorX = movilX;
-						// Campo 3: Coordenada Y
-						pktmovil_loc->coorY = movilY;
-
-						pktmovil_loc->distancem = (uint16_t) distance_nm;
-						pktmovil_loc->distance1 = (uint16_t) distance_n1;
-						pktmovil_loc->distance2 = (uint16_t) distance_n2;
-						pktmovil_loc->distance3 = (uint16_t) distance_n3;
-						pktmovil_loc->location= TRUE;
-
-						// Envía
-						if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(LocationMsg)) == SUCCESS) {
-							//						|-> Destino = Difusión
-							busy = TRUE;	// Ocupado
-						}
-					}
-					// Si está ocupado mandamos un mensaje reconocido para saberlo
-					else {
-
-						printf("Busy no se puede mandar el mensaje de location\n");
-						printfflush();
-						/*if(!busy){
-							// Reserva memoria para el paquete
-							LocationMsg* pktmovil_loc = (LocationMsg*)(call Packet.getPayload(&pkt, sizeof(LocationMsg)));
-
-							// Reserva errónea
-							if (pktmovil_loc == NULL) {
-								return 0;
-							}
-
-							pktmovil_loc->ID_movil = 0;
-							pktmovil_loc->coorX = 0;
-							pktmovil_loc->coorY = 0;
-
-						}*/
-						}
-					}
-			}else if (len == sizeof(SitiosLibresMsg)){
-			SitiosLibresMsg* pktsitioslibres_rx = (SitiosLibresMsg*)payload;		// Extrae el payload
-			
-			contador_3_mensajes = contador_3_mensajes + 1;
-			printf("Recibo sitios libres %d\n", contador_3_mensajes);
-			printfflush();
-
-				if(pktsitioslibres_rx->ID_plaza == APARC1_ID){
-					// Enciende led verde para notificar hueco libre encontrado
-					call Leds.led0On();   	// Led 0 On
-					call Leds.led1Off();   	// Led 1 Off
-					call Leds.led2Off();    // Led 2 Off
-					printf("Entra en el 1\n");
-
-					if(pktsitioslibres_rx->estado == LIBRE){
-						printf("La plaza 1 esta libre\n");
-						printfflush();
-						todos_ocupados = FALSE;
-					}else{
-						printf("La plaza 1 esta ocupada\n");
-
-						printfflush();
-					}
-					
-				}else if (pktsitioslibres_rx->ID_plaza == APARC2_ID){
-					call Leds.led0On();   	// Led 0 On
-					call Leds.led1Off();   	// Led 1 Off
-					call Leds.led2Off();    // Led 2 Off
-					printf("Entra en el 2\n");
-					
-					if(pktsitioslibres_rx->estado == LIBRE){
-						printf("La plaza 2 esta libre\n");
-						printfflush();
-						todos_ocupados = FALSE;
-					}else{
-						printf("La plaza 2 esta ocupada\n");
-						printfflush();
-					}
-
-
-				}else if(pktsitioslibres_rx->ID_plaza == APARC3_ID){
-					call Leds.led0On();   	// Led 0 On
-					call Leds.led1Off();   	// Led 1 Off
-					call Leds.led2Off();    // Led 2 Off
-					printf("Entra en el 3\n");
-					printfflush();
-					z = 3;
-					if(pktsitioslibres_rx->estado == LIBRE){
-						printf("La plaza 3 esta libre\n");
-						printfflush();
-						todos_ocupados = FALSE;
-					}else{
-						printf("La plaza 3 esta ocupada\n");
-						printfflush();
-					}
-				}else{
-					printf("ERROR, el id de la plaza no es de ningun aparcamiento reconocido\n");
-					printfflush();
-				}
-
-
-				if(contador_3_mensajes == 3){
-					contador_3_mensajes = 0;
-					if(todos_ocupados == TRUE){
-						printf("No hay plazas libres\n");
-						printfflush();
-						call TimerLedRojo.startOneShot(TIEMPO_ROJO_ENCENDIDO);
-					}else{
-						printf("Como hay plazas libres pedimos localizacion\n");
-						printfflush();
-						//Pide localizacion
-						call Timer0.startPeriodic(TIMER_PERIOD_MILLI);
-					}
-				
-				}
-
-			
-		}
-		return msg;
+	/**
+	*   Activación del temporizador BlueTimer
+	*/
+	event void BlueTimer.fired() {
+		// Apagar el led azul
+		turnOffLed(BLUE);
 	}
 }

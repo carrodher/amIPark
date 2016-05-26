@@ -1,4 +1,4 @@
-COMPONENT=FijoAppC
+COMPONENT=RssiBotAppC
 include $(MAKERULES)
 
 PFLAGS += -I$(TOSROOT)/tos/lib/printf
