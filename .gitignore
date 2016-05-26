@@ -1,2 +1,5 @@
 # telosB build folder
 build/
+
+# Ejecutable C
+*.out
