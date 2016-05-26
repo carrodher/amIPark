@@ -53,8 +53,8 @@ implementation {
   int16_t   rssiValueReceived;              // Medida RECIBIDA de RSSI
   int16_t   rssiOfAnchor[NUMBER_OF_ANCHORS];  // Medida asociada a cada anchor
 
-  float     a = -12.481;//-21.593;      // Variables para localización
-  float     b = -31.801;//-50.093;      //
+  float     a = -21.593;      // Variables para localización
+  float     b = -50.093;      //
 
   ParkingSpot spot[PARKING_SIZE];       // Vector con información de cada plaza libre recibida
   int16_t place = 0;
@@ -335,7 +335,6 @@ implementation {
 
       // Añadir la orden
       msg_tx->order = orderToSend;
-      msg_tx->extraData = idSpot;
 
       // Adjuntar datos adicionales según la orden especificada
       switch (orderToSend) {
@@ -344,13 +343,14 @@ implementation {
           // Nada que adjuntar
           break;
         
-        case FREE_SPOTS_REQUEST:
+        case PARKING_INFO_REQUEST:
           // Nada que adjuntar
           break;
 
         case SPOT_TAKEN_UP:
           // Adjuntar el ID de la plaza ocupada
-          // TODO
+          msg_tx->extraData = idSpot;
+          break;
 
       }
 

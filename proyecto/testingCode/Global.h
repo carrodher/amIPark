@@ -45,12 +45,12 @@ enum {
   MASTER_Y  = 0,
 
   FIJO_1_X  = 0,
-  FIJO_1_Y  = 200,
+  FIJO_1_Y  = 150,
 
-  FIJO_2_X  = 200,
-  FIJO_2_Y  = 200,
+  FIJO_2_X  = 150,
+  FIJO_2_Y  = 150,
 
-  FIJO_3_X  = 200,
+  FIJO_3_X  = 150,
   FIJO_3_Y  = 0,
 
 
@@ -63,13 +63,13 @@ enum {
   SPOT_02_ID = 2,
   SPOT_03_ID = 3,
 
-  SPOT_01_X  = 50,
-  SPOT_02_X  = 150,
-  SPOT_03_X  = 150,
+  SPOT_01_X  = 30,
+  SPOT_02_X  = 118,
+  SPOT_03_X  = 118,
 
-  SPOT_01_Y  = 150,
-  SPOT_02_Y  = 150,
-  SPOT_03_Y  = 50
+  SPOT_01_Y  = 115,
+  SPOT_02_Y  = 115,
+  SPOT_03_Y  = 30
 };
 
 
