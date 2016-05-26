@@ -3,9 +3,7 @@
 //#include <glade/glade.h>
 
 /* This is the callback for the delete_event, i.e. window closing */
-void
-inform_user_of_time_wasted (GtkWidget *widget, GdkEvent * event, gpointer data)
-{
+void inform_user_of_time_wasted (GtkWidget *widget, GdkEvent * event, gpointer data) {
 	/* Get the elapsed time since the timer was started */
 	GTimer * timer = (GTimer*) data;
 	gulong dumb_API_needs_this_variable;
@@ -21,9 +19,7 @@ inform_user_of_time_wasted (GtkWidget *widget, GdkEvent * event, gpointer data)
 	gtk_main_quit ();
 }
 
-gboolean
-update_progress_bar (gpointer data)
-{
+gboolean update_progress_bar (gpointer data) {
 	gtk_progress_bar_pulse (GTK_PROGRESS_BAR (data));
 
 	/* Return true so the function will be called again; returning false removes
@@ -32,9 +28,7 @@ update_progress_bar (gpointer data)
 	return TRUE;
 }
 
-int
-main (int argc, char *argv[])
-{
+int main (int argc, char *argv[]) {
 	GladeXML *what_a_waste;
 
 	gtk_init (&argc, &argv);
@@ -50,14 +44,12 @@ main (int argc, char *argv[])
 	gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
 
 	/* Add a timeout to update the progress bar every 100 milliseconds or so */
-	gint func_ref = g_timeout_add (100, update_progress_bar, progress_bar);
+	gint func_ref = g_timeout_add(100, update_progress_bar, progress_bar);
 
 	/* Start the wasted_time_tracker timer, and connect it to the callback */
 	GTimer *wasted_time_tracker = g_timer_new ();
 	GtkWidget *widget = glade_xml_get_widget (what_a_waste, "WasteTimeWindow");
-	g_signal_connect (G_OBJECT (widget), "delete_event",
-	G_CALLBACK (inform_user_of_time_wasted),
-	wasted_time_tracker);
+	g_signal_connect(G_OBJECT (widget), "delete_event", G_CALLBACK(inform_user_of_time_wasted), wasted_time_tracker);
 
 	/* start the event loop */
 	gtk_main ();
