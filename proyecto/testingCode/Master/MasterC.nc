@@ -11,6 +11,7 @@ module MasterC {
 	uses interface Leds;
   uses interface CC2420Packet;
 	uses interface Timer<TMilli> as SendBeaconTimer;
+  uses interface Timer<TMilli> as SendParkingInfoTimer;
 	uses interface Timer<TMilli> as RssiResponseTimer;
 	uses interface Timer<TMilli> as RssiRequestTimer;
   uses interface Timer<TMilli> as RedTimer;
@@ -46,9 +47,9 @@ implementation {
   uint8_t   anchorToSend;   // ID del anchor que se enviará en el siguiente mensaje
 
   // Datos de las plazas de parking
-  uint8_t   spotId [PARKING_SIZE] = {SPOT_01_ID, SPOT_02_ID, SPOT_03_ID};
-  uint16_t  spotX  [PARKING_SIZE] = {SPOT_01_X , SPOT_02_X , SPOT_03_X };
-  uint16_t  spotY  [PARKING_SIZE] = {SPOT_01_Y , SPOT_02_Y , SPOT_03_Y };
+  uint8_t   spotId [PARKING_SIZE] = {SPOT_01_ID, SPOT_02_ID, SPOT_03_ID, SPOT_04_ID};
+  uint16_t  spotX  [PARKING_SIZE] = {SPOT_01_X , SPOT_02_X , SPOT_03_X , SPOT_04_X };
+  uint16_t  spotY  [PARKING_SIZE] = {SPOT_01_Y , SPOT_02_Y , SPOT_03_Y , SPOT_04_Y };
   uint8_t   spotToSend;     // ID de la plaza que se enviará en el siguiente mensaje
 
   // Para el modo de calibración (Cálculo de "a" y "b")
@@ -79,10 +80,14 @@ implementation {
     bool          free[PARKING_SIZE];       // TRUE si está libre, FALSE en otro caso
     uint8_t       vehicleID[PARKING_SIZE];  // ID del vehículo aparcado (de haberlo)
   } parkingStatus;
+
+  uint8_t numberOfFreeSpots = PARKING_SIZE; // Número de plazas de parking libres
+  uint8_t freeSpotsId[PARKING_SIZE];        // Vector con los IDs de las plazas libres
   /* ============================================== */
 
 
   /* ========= [Declaración de funciones] ========= */
+  void    showParkingStatus();
   float   rssiMean();
   void    computeConstants (float rssi1, float rssi2, float d1, float d2);
   void    printfFloat(float floatToBePrinted);
@@ -90,11 +95,14 @@ implementation {
   void    turnOffLed (uint8_t led);
   bool    linkVehicle (uint8_t vehicleId);
   bool    unlinkVehicle (uint8_t vehicleId);
+  bool    assignSpot (uint8_t vehicleId, uint8_t spot);
+  bool    unAssignSpot (uint8_t vehicleId, uint8_t spot);
   bool    getAssignedSlot (uint8_t slots, nx_uint8_t* slotsOwners, uint8_t* assignedSlot);
   int16_t getRssi (message_t *msg);
   void    sendRssiMessage(uint8_t order);
   void    sendBeaconMessage();
   void    sendUpdateConstantsMessage();
+  void    sendParkingInfoMessage(uint8_t order);
   void    newSampleReceived();
   /* ============================================== */
 
@@ -108,14 +116,17 @@ implementation {
   event void Notify.notify(button_state_t state) {
     // Comprobar si está pulsado
 	  if (state == BUTTON_PRESSED) {
-      printf("Pulsado\n");
-      printfflush();
       
       // Activar el modo de calibración o desactivarlo si ya estaba activo
       if (!calibrationMode) {
         calibrationMode = TRUE;   // Activarlo
+        printf("[DEBUG] Modo calibracion activado\n");
+        printfflush();
       } else {
         calibrationMode = FALSE;  // Desactivarlo
+
+        printf("[DEBUG] Modo calibracion desactivado\n");
+        printfflush();
 
         call RssiRequestTimer.stop();   // Detener el envio de mensajes de solicitud de medida RSSI
 
@@ -127,6 +138,59 @@ implementation {
     }
     else if (state == BUTTON_RELEASED) {
       // Nada que hacer
+    }
+  }
+
+
+
+  /**
+  *   Calcula el número de plazas libres en el parking y sus IDs asociados
+  *   Se utilizan las variables:  numberOfFreeSpots
+  *                               freeSpotsId[]
+  */
+  void getFreeSpots () {
+    
+    // Resetear
+    numberOfFreeSpots = 0;
+    j                 = 0;
+
+    // Recorrer el vector con la información de cada plaza de aparcamiento
+    for (i = 0 ; i<PARKING_SIZE ; i++) {
+
+      // Si la plaza está libre...
+      if (parkingStatus.free[i]) {
+        // Contarla
+        numberOfFreeSpots++;
+        freeSpotsId[j++] = parkingStatus.spot[i].id;
+
+      }
+    }
+    
+    if (numberOfFreeSpots == 0) {
+      printf("[INFO] No hay plazas libres\n");
+      printfflush();
+    }
+  }
+
+
+
+  /**
+  *   Imprime por pantalla la información del parking
+  */
+  void showParkingStatus() {
+    // Recorrer el vector con las plazas de parking e imprimir la información de cada una
+    for (i=0 ; i<PARKING_SIZE ; i++) {
+      if (i==0) { printf("\n----------------\n"); }
+      printf("ID=%d\n", parkingStatus.spot[i].id = spotId[i]);
+      printf("X=%d\n",  parkingStatus.spot[i].x  = spotX [i]);
+      printf("Y=%d\n",  parkingStatus.spot[i].y  = spotY [i]);
+      if (parkingStatus.free[i]) {
+        printf("LIBRE\n");
+      } else {
+        printf("OCUPADO\n");
+      }
+      printf("vehicleID=%d\n",   parkingStatus.vehicleID[i]);
+      printf("----------------\n");
     }
   }
 
@@ -259,7 +323,7 @@ implementation {
         linkedVehicles[i] = vehicleId;
         linked = TRUE;
         numberOfLinkedVehicles++;
-        printf("Vehiculo con ID (%d) asociado. Total: %d\n", vehicleId, numberOfLinkedVehicles);
+        printf("Vehiculo (ID=%d) asociado. Total: %d\n", vehicleId, numberOfLinkedVehicles);
         printfflush();
       }
     }
@@ -284,12 +348,103 @@ implementation {
         linkedVehicles[i] = 0;
         done = TRUE;
         numberOfLinkedVehicles--;
-        printf("Vehiculo con ID (%d) desasociado. Total: %d\n", vehicleId, numberOfLinkedVehicles);
+        printf("Vehiculo (ID=%d) desasociado. Total: %d\n", vehicleId, numberOfLinkedVehicles);
         printfflush();
       }
     }
 
     return done;
+  }
+
+
+
+  /**
+  *   Devuelve verdadero si se asignado la plaza al vehículo
+  */
+  bool assignSpot (uint8_t vehicleId, uint8_t spot) {
+    
+    // Flag
+    bool assigned = FALSE;
+
+    // Recorrer el vector con la información de cada plaza de aparcamiento
+    for (i = 0 ; (i<PARKING_SIZE) && (assigned == FALSE) ; i++) {
+
+      // Si se encuentra la plaza especificada por su ID
+      if (parkingStatus.spot[i].id == spot) {
+
+        // Comprobar si está libre
+        if (parkingStatus.free[i]) {
+          // Asignarla al vehicleId indicado y marcarla como ocupada
+          parkingStatus.vehicleID[i] = vehicleId;
+          parkingStatus.free[i]      = FALSE;
+
+          printf("Vehiculo (ID=%d) ha ocupado la plaza %d\n", vehicleId, spot);
+          printfflush();
+          assigned = TRUE;              // Se ha coseguido asignar la plaza al vehículo
+
+        } else {
+          printf("[ERROR] Se intenta asignar una plaza (%d) ya ocupada por (vehicleID=%d)\n", spot, parkingStatus.vehicleID[i]);
+          printfflush();
+        }
+      }
+    }
+
+    // Comprobar si se logró asignar la plaza
+    if (!assigned) {
+      printf("[ERROR] No se puede asignar la plaza solicitada (%d)\n", spot);
+      printfflush();
+    }
+
+    return assigned;
+  }
+
+
+
+  /**
+  *   Devuelve verdadero si se ha liberado la plaza solicitada
+  */
+  bool unAssignSpot (uint8_t vehicleId, uint8_t spot) {
+    
+    // Flag
+    bool unAssigned = FALSE;
+
+    // Recorrer el vector con la información de cada plaza de aparcamiento
+    for (i = 0 ; (i<PARKING_SIZE) && (unAssigned == FALSE) ; i++) {
+
+      // Si se encuentra la plaza especificada por su ID
+      if (parkingStatus.spot[i].id == spot) {
+
+        // Comprobar si está ocupado
+        if (!parkingStatus.free[i]) {
+
+          // Comprobar si el vehículo ahí aparcado es el que ha dicho que se va
+          if (parkingStatus.vehicleID[i] == vehicleId) {
+            // Limpiar la plaza
+            parkingStatus.free[i] = TRUE;
+            parkingStatus.vehicleID[i] = 0;
+            printf("Vehiculo (ID=%d) ha dejado libre la plaza %d\n", vehicleId, spot);
+            printfflush();
+            unAssigned = TRUE;          // Se ha coseguido asignar la plaza al vehículo
+
+          } else {
+            printf("[ERROR] Un vehículo (ID=%d) intenta dejar una plaza (%d) no asociada a el\n", vehicleId, spot);
+            printfflush();
+          }
+
+        } else {
+          printf("[ERROR] Se intenta liberar una plaza (%d) no ocupada\n", spot);
+          printfflush();
+        }
+      }
+    }
+
+    // Comprobar si se logró liberar la plaza
+    if (!unAssigned) {
+      printf("[ERROR] No se logró liberar la plaza (%d) solicitada\n", spot);
+      printfflush();
+    }
+
+    return unAssigned;
   }
 
 
@@ -388,7 +543,9 @@ implementation {
         // Enviar y comprobar el resultado
         if(call AMSend.send(destination, &pkt, messageLength) == SUCCESS) {
           busy = TRUE;      // Ocupado
-          printf("[DEBUG] Enviado mensaje RssiMsg\n");
+          if (!calibrationMode) {
+            printf("[DEBUG] Enviado mensaje RssiMsg\n");
+          }
           printfflush();
           // Notificación visual de envio de mensaje
           turnOnLed(RED, LED_BLINK_TIME);
@@ -527,9 +684,11 @@ implementation {
   *   Usar variable "destination" para indicar el destino: AM_BROADCAST_ADDR para difussión, en cualquier otro caso el nodeID destino
   */    
   void sendParkingInfoMessage(uint8_t order) {
+
+    bool done = FALSE;              // Flag para detener bucle for
     
-    uint16_t messageLength = 0;   // Almacenará el tamaño del mensaje a enviar
-    ParkingInfo* msg_tx = NULL;       // Necesario crear el puntero previamente
+    uint16_t messageLength = 0;     // Almacenará el tamaño del mensaje a enviar
+    ParkingInfo* msg_tx = NULL;     // Necesario crear el puntero previamente
 
     // Reserva memoria para el paquete
     messageLength = sizeof(ParkingInfo);
@@ -552,9 +711,17 @@ implementation {
         
         case PARKING_SPOT:
           // Adjuntar la plaza de parking correspondiente
-          msg_tx->id = spotId[spotToSend];  // Adjuntar el ID de la plaza que se haya indicado
-          msg_tx->x  = spotX [spotToSend];  // Indicar la coordenada X
-          msg_tx->y  = spotY [spotToSend];  // Indicar la coordenada Y
+          msg_tx->id = freeSpotsId[spotToSend];  // Adjuntar el ID de la plaza que se haya indicado
+
+          // Recorrer el vector con la información de cada plaza de aparcamiento
+          for (i = 0 ; (i<PARKING_SIZE) && (done == FALSE) ; i++) {
+            // Si se encuentra la plaza especificada por su ID
+            if (parkingStatus.spot[i].id == freeSpotsId[spotToSend]) {
+              msg_tx->x  = parkingStatus.spot[i].x;  // Indicar la coordenada X
+              msg_tx->y  = parkingStatus.spot[i].y;  // Indicar la coordenada Y
+              done = TRUE;                           // Terminar búsqueda
+            }
+          }
           break;
         
         case ANCHOR_POSITION:
@@ -609,10 +776,12 @@ implementation {
     if (length == sizeof(RssiMsg)) {
       // Extraer el payload
       RssiMsg* msg_rx = (RssiMsg*)payload;
+      
+      if (!calibrationMode) {
+        printf("Recibido: RssiMsg / Orden: %d\n", msg_rx->order);
+        printfflush();
+      }
 
-      printf("Recibido: RssiMsg / Orden: %d\n", msg_rx->order);
-      printfflush();
-    
       // Determinar la orden recibida
       switch (msg_rx->order) {
 
@@ -628,7 +797,9 @@ implementation {
         case RSSI_MEASURE:
           // Almacenar la medida RSSI recivida
           rssiValueReceived = msg_rx->rssiValue;
-          printf("Recibida medida RSSI del nodo %d con valor: %d\n", msg_rx->nodeID, rssiValueReceived);
+          if (!calibrationMode) {
+            printf("Recibida medida RSSI del nodo %d con valor: %d\n", msg_rx->nodeID, rssiValueReceived);
+          }
           printfflush();
           
           if (calibrationMode) {
@@ -647,7 +818,7 @@ implementation {
       TdmaRssiRequestFrame* msg_rx = (TdmaRssiRequestFrame*)payload;
 
       printf("Recibido: TdmaRssiRequestFrame\n");
-      printf("X = %d, Y = %d\n", msg_rx->X, msg_rx->Y);
+      printf("X = %d, Y = %d\n", msg_rx->x, msg_rx->y);
       printfflush();
       
       // Si se tiene un slot asociado...
@@ -684,28 +855,26 @@ implementation {
         case PARKING_INFO_REQUEST:
           // Enviar coordenadas de los fijos
           // (+)
-          // Enviar mensaje(s) con el(los) sitio(s) libre(s) del parking
-          // TODO ///////////////////////////////////////////////////////////////
-          // TODO ///////////////////////////////////////////////////////////////
-          // TODO ///////////////////////////////////////////////////////////////
-          // TODO ///////////////////////////////////////////////////////////////
+          // Enviar mensaje(s) con el(los) sitio(s) libre(s) del parking al nodo que lo solicitó
+          anchorToSend = 0;               // Resetear
+          spotToSend   = 0;               //
+          destination  = msg_rx->nodeID;  // Destino el nodo que envió esta solicitud
+          getFreeSpots();                 // Obtener las plazas de aparcamiento libres y guardarlas para su envio
+          call SendParkingInfoTimer.startPeriodic(PARKING_INFO_SEND_FREQUENCY);
           break;
 
         case SPOT_TAKEN_UP:
           // Liberar el slot asociado a ese nodo en la trama TDMA beacon del master
           unLinkVehicle(msg_rx->nodeID);
           // Marcar la plaza indicada como ocupada
-          parkingStatus.free[msg_rx->extraData] = FALSE;
-          printf("Estacionamiento: El vehiculo con ID %d ha estacionado en la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
-          printfflush();
+          assignSpot(msg_rx->nodeID, msg_rx->extraData);
           break;
-        case DRIVE_OFF:
+
+        case SPOT_RELEASED:
           // Liberar el slot asociado a ese nodo en la trama TDMA beacon del master
           unLinkVehicle(msg_rx->nodeID);
           // Marcar la plaza indicada como ocupada
-          parkingStatus.free[msg_rx->extraData] = TRUE;
-          printf("Estacionamiento: El vehiculo con ID %d ha abandonado la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
-          printfflush();
+          unAssignSpot(msg_rx->nodeID, msg_rx->extraData);
           break;
 
       }
@@ -783,10 +952,11 @@ implementation {
 
     // Inicializar el vector con la información de las plazas de aparcamiento
     for (i=0 ; i<PARKING_SIZE ; i++) {
-      parkingStatus.spot[i].id  = spotId[i];
-      parkingStatus.spot[i].x   = spotX [i];
-      parkingStatus.spot[i].y   = spotY [i];
-      parkingStatus.free[i]     = TRUE;
+      parkingStatus.spot[i].id   = spotId[i];
+      parkingStatus.spot[i].x    = spotX [i];
+      parkingStatus.spot[i].y    = spotY [i];
+      parkingStatus.free[i]      = TRUE;
+      parkingStatus.vehicleID[i] = 0;
     }
     
     // Inicializar el envio de la trama beacon
@@ -794,6 +964,9 @@ implementation {
     
     // Notificar visualmente que el mote está encendido
     turnOnLed(BLUE,0);
+
+    // Mostrar información inicial del parking
+    showParkingStatus();
 	}
 
 
@@ -843,6 +1016,37 @@ implementation {
       // Iniciar la solicitud de medidas RSSI
       destination = nodesToRequestRssi[0];    // Seleccionar el primer nodo
       call RssiRequestTimer.startPeriodic(RSSI_REQUEST_SEND_FREQUENCY);
+    }
+	}
+
+
+
+  /**
+  *   Activación del temporizador SendParkingInfoTimer
+  */
+  event void SendParkingInfoTimer.fired() {
+  
+    // Primero comprobar si hay plazas libres
+    if (numberOfFreeSpots == 0) {
+      // Enviar mensaje avisando de que no hay plazas libres
+      sendParkingInfoMessage(NO_SPOTS_AVAILABLE);
+      call SendParkingInfoTimer.stop();
+
+
+    // Si hay plazas...
+    } else if (anchorToSend < NUMBER_OF_ANCHORS) {
+      // Enviar la información de los anchors
+      sendParkingInfoMessage(ANCHOR_POSITION);
+      anchorToSend++;     // Siguiente anchor
+
+    } else if (spotToSend < numberOfFreeSpots)  {
+      // Enviar la información de las plazas libres
+      sendParkingInfoMessage(PARKING_SPOT);
+      spotToSend++;     // Siguiente plaza de aparcamiento (libre)
+
+    } else {
+      // Ya se ha enviado toda la información, detener este timer
+      call SendParkingInfoTimer.stop();
     }
 	}
 

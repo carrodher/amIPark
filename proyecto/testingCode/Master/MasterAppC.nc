@@ -8,6 +8,7 @@ implementation {
 	components LedsC;
 	components MasterC as App;
 	components new TimerMilliC() as SendBeaconTimer;
+	components new TimerMilliC() as SendParkingInfoTimer;
 	components new TimerMilliC() as RssiResponseTimer;
 	components new TimerMilliC() as RssiRequestTimer;
   components new TimerMilliC() as RedTimer;
@@ -23,6 +24,7 @@ implementation {
 	App.Boot -> MainC;
 	App.Leds -> LedsC;
 	App.SendBeaconTimer -> SendBeaconTimer;
+	App.SendParkingInfoTimer -> SendParkingInfoTimer;
 	App.RssiResponseTimer -> RssiResponseTimer;
 	App.RssiRequestTimer -> RssiRequestTimer;
   App.RedTimer -> RedTimer;
