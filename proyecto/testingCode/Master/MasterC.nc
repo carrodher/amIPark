@@ -552,16 +552,16 @@ implementation {
         
         case PARKING_SPOT:
           // Adjuntar la plaza de parking correspondiente
-          msg_tx->id = spotId[spotToSend]  // Adjuntar el ID de la plaza que se haya indicado
-          msg_tx->x  = spotX [spotToSend]  // Indicar la coordenada X
-          msg_tx->y  = spotY [spotToSend]  // Indicar la coordenada Y
+          msg_tx->id = spotId[spotToSend];  // Adjuntar el ID de la plaza que se haya indicado
+          msg_tx->x  = spotX [spotToSend];  // Indicar la coordenada X
+          msg_tx->y  = spotY [spotToSend];  // Indicar la coordenada Y
           break;
         
         case ANCHOR_POSITION:
           // Adjuntar los datos del anchor correspondiente
-          msg_tx->id = anchorId[anchorToSend]  // Adjuntar el ID del anchor que se haya indicado
-          msg_tx->x  = anchorX [anchorToSend]  // Indicar la coordenada X
-          msg_tx->y  = anchorY [anchorToSend]  // Indicar la coordenada Y
+          msg_tx->id = anchorId[anchorToSend];  // Adjuntar el ID del anchor que se haya indicado
+          msg_tx->x  = anchorX [anchorToSend];  // Indicar la coordenada X
+          msg_tx->y  = anchorY [anchorToSend];  // Indicar la coordenada Y
           break;
 
       }
@@ -647,6 +647,7 @@ implementation {
       TdmaRssiRequestFrame* msg_rx = (TdmaRssiRequestFrame*)payload;
 
       printf("Recibido: TdmaRssiRequestFrame\n");
+      printf("X = %d, Y = %d\n", msg_rx->X, msg_rx->Y);
       printfflush();
       
       // Si se tiene un slot asociado...
@@ -695,6 +696,8 @@ implementation {
           unLinkVehicle(msg_rx->nodeID);
           // Marcar la plaza indicada como ocupada
           parkingStatus.free[msg_rx->extraData] = FALSE;
+          printf("Estacionamiento: El vehiculo con ID %d ha estacionado en la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
+          printfflush();
           break;
 
       }

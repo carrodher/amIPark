@@ -46,14 +46,18 @@ implementation {
   /* ========= [Variables de información] ========= */           
   uint8_t   destination;                // Destino del siguiente mensaje a enviar (nodeID/Difusión)
   uint8_t   orderToSend;                // Almacena la orden a enviar en el siguiente mensaje
+  uint8_t   idSpot;                     // Id de la plaza en que se aparca (extraData)
+
+
 
   int16_t   rssiValueReceived;              // Medida RECIBIDA de RSSI
   int16_t   rssiOfAnchor[NUMBER_OF_ANCHORS];  // Medida asociada a cada anchor
 
-  float     a = -12.4814;//-21.593;      // Variables para localización
-  float     b = -31.8018;//-50.093;      //
+  float     a = -12.481;//-21.593;      // Variables para localización
+  float     b = -31.801;//-50.093;      //
 
   ParkingSpot spot[PARKING_SIZE];       // Vector con información de cada plaza libre recibida
+  int16_t place = 0;
   /* ============================================== */
 
 
@@ -70,17 +74,18 @@ implementation {
 
 
   /* ========= [Declaración de funciones] ========= */
-  float   getDistance(int16_t rssi);
-  float   getWeight(float d);
-  int16_t computeLocation(float* w_t, uint16_t* c);
-  void    getLocation(int16_t* rssi);
-  void    printfFloat(float floatToBePrinted);
-  void    turnOnLed  (uint8_t led, uint16_t time);
-  void    turnOffLed (uint8_t led);
-  bool    getAssignedSlot (uint8_t slots, nx_uint8_t* slotsOwners, uint8_t* assignedSlot);
-  void    sendVehicleOrderMessage();  
-  void    sendBeaconMessage();
-  void    newRssiMeasureReceived(uint8_t nodeId);
+  float    getDistance(int16_t rssi);
+  float    getWeight(float d);
+  int16_t  computeLocation(float* w_t, uint16_t* c);
+  void     getLocation(int16_t* rssi);
+  void     printfFloat(float floatToBePrinted);
+  void     turnOnLed  (uint8_t led, uint16_t time);
+  void     turnOffLed (uint8_t led);
+  bool     getAssignedSlot (uint8_t slots, nx_uint8_t* slotsOwners, uint8_t* assignedSlot);
+  void     sendVehicleOrderMessage();  
+  void     sendBeaconMessage();
+  void     newRssiMeasureReceived(uint8_t nodeId);
+  uint16_t am_i_parked(uint16_t movilXr, uint16_t movilYr);
   /* ============================================== */
 
 
@@ -111,7 +116,7 @@ implementation {
   */
   float getDistance(int16_t rssi) {
 	  float rssi_float = (float) rssi;      // Convertir RSSI a float
-	  return powf(10, (rssi_float-b)/a );
+    return powf(10, (rssi_float-b)/a );
   }
 
 
@@ -145,6 +150,43 @@ implementation {
     return numerator/denominator;
   }
 
+/**
+  *   Comprueba si esta aparcado en una de las plazas de aparcamiento
+  *   Devuelve 0 si no esta aparcado
+  */
+  uint16_t am_i_parked(uint16_t movilXr, uint16_t movilYr){
+    uint16_t parked = 0;
+    if(movilXr <= (SPOT_01_X+ERROR) && movilXr >= (SPOT_01_X-ERROR) && movilYr <= (SPOT_01_Y+ERROR) && movilYr >= (SPOT_01_Y-ERROR)){
+      parked = 1;
+      status = PARKED;
+    }else if(movilXr <= (SPOT_02_X+ERROR) && movilXr >= (SPOT_02_X-ERROR) && movilYr <= (SPOT_02_Y+ERROR) && movilYr >= (SPOT_02_Y-ERROR)){
+      parked = 2;
+      status = PARKED;
+    }else if(movilXr <= (SPOT_03_X+ERROR) && movilXr >= (SPOT_03_X-ERROR) && movilYr <= (SPOT_03_Y+ERROR) && movilYr >= (SPOT_03_Y-ERROR)){
+      parked = 3;
+      status = PARKED;
+    }
+    return parked;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   /**
@@ -164,7 +206,11 @@ implementation {
 
     printf("[INFO] Nueva localizacion: x=%d, y=%d\n", movilX, movilY);
     printfflush();
+
+    place = am_i_parked(movilX, movilY);
   }
+
+
 
 
   /**
@@ -289,6 +335,7 @@ implementation {
 
       // Añadir la orden
       msg_tx->order = orderToSend;
+      msg_tx->extraData = idSpot;
 
       // Adjuntar datos adicionales según la orden especificada
       switch (orderToSend) {
@@ -354,6 +401,8 @@ implementation {
       // Añadir el número de slots actualmente en uso y el tiempo reservado a cada cual
       msg_tx->slots = numberOfAnchors;
       msg_tx->tSlot = TDMA_RSSI_REQUEST_SLOT_TIME;
+      msg_tx->X = movilX;
+      msg_tx->Y = movilY;
 
       // Asignar los slots a los IDs correspondientes
       for (i=0 ; i<numberOfAnchors ; i++) {
@@ -464,6 +513,13 @@ implementation {
             break;
 
           case PARKED:
+            printf("Estacionamiento: He aparcado en la plaza %d\n", place);
+             printfflush();
+             destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
+             orderToSend = SPOT_TAKEN_UP;        // Orden de solicitud de slot de comunicación
+             idSpot      = place;
+            // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
+             call VehicleOrderTimer.startOneShot( (msg_rx->slots)*(msg_rx->tSlot) + nodeID/10 );
             //TODO
             break;
 
@@ -501,7 +557,14 @@ implementation {
             break;
 
           case PARKED:
-            // Nada que hacer
+             printf("Estacionamiento: He aparcado en la plaza %d\n", place);
+             printfflush();
+             destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
+             orderToSend = SPOT_TAKEN_UP;        // Orden de solicitud de slot de comunicación
+             idSpot      = place;
+            // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
+             call VehicleOrderTimer.startOneShot( (msg_rx->slots)*(msg_rx->tSlot) + nodeID/10 );
+             //sendParkedState(place)
             break;
 
         }

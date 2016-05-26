@@ -56,18 +56,20 @@ enum {
 
   MAX_LINKED_VEHICLES = 5,
   PARKING_SIZE = 3,
+
+  ERROR      = 20,
   
   SPOT_01_ID = 1,
   SPOT_02_ID = 2,
   SPOT_03_ID = 3,
 
-  SPOT_01_X  = 100,
-  SPOT_02_X  = 200,
-  SPOT_03_X  = 300,
+  SPOT_01_X  = 50,
+  SPOT_02_X  = 150,
+  SPOT_03_X  = 150,
 
-  SPOT_01_Y  = 300,
-  SPOT_02_Y  = 300,
-  SPOT_03_Y  = 300
+  SPOT_01_Y  = 150,
+  SPOT_02_Y  = 150,
+  SPOT_03_Y  = 50
 };
 
 
@@ -101,10 +103,12 @@ typedef nx_struct TdmaBeaconFrame {
 
 
 typedef nx_struct TdmaRssiRequestFrame {
-  nx_uint8_t  nodeID;               // ID del nodo origen del mensaje
-  nx_uint8_t  slots;                // Número de slots de TDMA
-  nx_uint16_t tSlot;                // Tiempo dedicado a cada slot
-  nx_uint8_t  slotsOwners[NUMBER_OF_ANCHORS];       // IDs de los dueños de los slots (nodeIDs) == [[Número de anchors]]
+  nx_uint8_t  nodeID;                             // ID del nodo origen del mensaje
+  nx_uint8_t  slots;                              // Número de slots de TDMA
+  nx_uint16_t tSlot;                              // Tiempo dedicado a cada slot
+  nx_uint8_t  slotsOwners[ NUMBER_OF_ANCHORS];    // IDs de los dueños de los slots (nodeIDs) == [[Número de anchors]]
+  nx_uint8_t  X;
+  nx_uint8_t  Y;
 } TdmaRssiRequestFrame;
 
 
