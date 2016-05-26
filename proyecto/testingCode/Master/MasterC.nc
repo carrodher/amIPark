@@ -39,9 +39,17 @@ implementation {
 
 
   /* ========= [Variables de información] ========= */
-  uint8_t   spotId[PARKING_SIZE] = {SPOT_01_ID, SPOT_02_ID, SPOT_03_ID};
-  uint16_t  spotX [PARKING_SIZE] = {SPOT_01_X , SPOT_02_X , SPOT_03_X };
-  uint16_t  spotY [PARKING_SIZE] = {SPOT_01_Y , SPOT_02_Y , SPOT_03_Y };
+  // Datos de los anchors
+  uint8_t   anchorId [NUMBER_OF_ANCHORS] = {MASTER_ID, FIJO_1_ID, FIJO_2_ID, FIJO_3_ID};
+  uint16_t  anchorX  [NUMBER_OF_ANCHORS] = {MASTER_X,  FIJO_1_X,  FIJO_2_X,  FIJO_3_X };
+  uint16_t  anchorY  [NUMBER_OF_ANCHORS] = {MASTER_Y,  FIJO_1_Y,  FIJO_2_Y,  FIJO_3_Y };
+  uint8_t   anchorToSend;   // ID del anchor que se enviará en el siguiente mensaje
+
+  // Datos de las plazas de parking
+  uint8_t   spotId [PARKING_SIZE] = {SPOT_01_ID, SPOT_02_ID, SPOT_03_ID};
+  uint16_t  spotX  [PARKING_SIZE] = {SPOT_01_X , SPOT_02_X , SPOT_03_X };
+  uint16_t  spotY  [PARKING_SIZE] = {SPOT_01_Y , SPOT_02_Y , SPOT_03_Y };
+  uint8_t   spotToSend;     // ID de la plaza que se enviará en el siguiente mensaje
 
   // Para el modo de calibración (Cálculo de "a" y "b")
   uint8_t   nodesToRequestRssi [2] = {FIJO_1_ID, FIJO_2_ID};    
@@ -86,6 +94,7 @@ implementation {
   int16_t getRssi (message_t *msg);
   void    sendRssiMessage(uint8_t order);
   void    sendBeaconMessage();
+  void    sendUpdateConstantsMessage();
   void    newSampleReceived();
   /* ============================================== */
 
@@ -468,6 +477,116 @@ implementation {
 
 
 
+  /**
+  *   Envia un mensaje de tipo UpdateConstants
+  *   Actualiza las "constantes" a y b usadas en la localización
+  */    
+  void sendUpdateConstantsMessage() {
+    
+    uint16_t messageLength = 0;           // Almacenará el tamaño del mensaje a enviar
+    UpdateConstants* msg_tx = NULL;       // Necesario crear el puntero previamente
+
+    // Reserva memoria para el paquete
+    messageLength = sizeof(UpdateConstants);
+    msg_tx = (UpdateConstants*) call Packet.getPayload(&pkt, messageLength);
+    
+    // Comprobar que se realizó la reserva de memoria correctamente
+    if (msg_tx == NULL) {
+      printf("[ERROR] Reserva de memoria\n");
+      printfflush();
+    } else {
+
+      // Adjuntar datos adicionales
+      msg_tx->a = a;
+      msg_tx->b = b;
+
+      // Comprobar que no esté ocupado el transmisor
+      if (!busy) {
+        // Enviar y comprobar el resultado
+        if(call AMSend.send(AM_BROADCAST_ADDR, &pkt, messageLength) == SUCCESS) {
+          busy = TRUE;      // Ocupado
+          printf("[DEBUG] Enviado mensaje UpdateConstants\n");
+          printfflush();
+          // Notificación visual de envio de mensaje
+          turnOnLed(RED, LED_BLINK_TIME);
+        } else {
+          printf("[ERROR] Mensaje no enviado\n");
+          printfflush();
+        }
+      } else {
+        printf("[ERROR] Bussy\n");
+        printfflush();
+      }
+    }
+  }
+
+
+
+  /**
+  *   Envia un mensaje de tipo ParkingInfo
+  *   Usar variable "destination" para indicar el destino: AM_BROADCAST_ADDR para difussión, en cualquier otro caso el nodeID destino
+  */    
+  void sendParkingInfoMessage(uint8_t order) {
+    
+    uint16_t messageLength = 0;   // Almacenará el tamaño del mensaje a enviar
+    ParkingInfo* msg_tx = NULL;       // Necesario crear el puntero previamente
+
+    // Reserva memoria para el paquete
+    messageLength = sizeof(ParkingInfo);
+    msg_tx = (ParkingInfo*) call Packet.getPayload(&pkt, messageLength);
+    
+    // Comprobar que se realizó la reserva de memoria correctamente
+    if (msg_tx == NULL) {
+      printf("[ERROR] Reserva de memoria\n");
+      printfflush();
+    } else {
+
+      // Añadir el id del nodo origen
+      msg_tx->nodeID  = nodeID;
+
+      // Añadir la orden
+      msg_tx->order = order;
+
+      // Adjuntar datos adicionales según la orden especificada
+      switch (order) {
+        
+        case PARKING_SPOT:
+          // Adjuntar la plaza de parking correspondiente
+          msg_tx->id = spotId[spotToSend]  // Adjuntar el ID de la plaza que se haya indicado
+          msg_tx->x  = spotX [spotToSend]  // Indicar la coordenada X
+          msg_tx->y  = spotY [spotToSend]  // Indicar la coordenada Y
+          break;
+        
+        case ANCHOR_POSITION:
+          // Adjuntar los datos del anchor correspondiente
+          msg_tx->id = anchorId[anchorToSend]  // Adjuntar el ID del anchor que se haya indicado
+          msg_tx->x  = anchorX [anchorToSend]  // Indicar la coordenada X
+          msg_tx->y  = anchorY [anchorToSend]  // Indicar la coordenada Y
+          break;
+
+      }
+
+      // Comprobar que no esté ocupado el transmisor
+      if (!busy) {
+        // Enviar y comprobar el resultado
+        if(call AMSend.send(destination, &pkt, messageLength) == SUCCESS) {
+          busy = TRUE;      // Ocupado
+          printf("[DEBUG] Enviado mensaje ParkingInfo\n");
+          printfflush();
+          // Notificación visual de envio de mensaje
+          turnOnLed(RED, LED_BLINK_TIME);
+        } else {
+          printf("[ERROR] Mensaje no enviado\n");
+          printfflush();
+        }
+      } else {
+        printf("[ERROR] Bussy\n");
+        printfflush();
+      }
+    }
+  }
+
+
 
   /**
   *   Mensaje recibido
@@ -561,7 +680,9 @@ implementation {
           linkVehicle(msg_rx->nodeID);
           break;
         
-        case FREE_SPOTS_REQUEST:
+        case PARKING_INFO_REQUEST:
+          // Enviar coordenadas de los fijos
+          // (+)
           // Enviar mensaje(s) con el(los) sitio(s) libre(s) del parking
           // TODO ///////////////////////////////////////////////////////////////
           // TODO ///////////////////////////////////////////////////////////////
@@ -611,10 +732,15 @@ implementation {
         computeConstants( rssiMeanValue[0], rssiMeanValue[1], FIJO_1_Y, sqrtf( powf(FIJO_2_X,2) + powf(FIJO_2_Y,2) ));
 
         meanValueIndex = 0;   // Resetear para futuros cálculos
+        
+        // Enviar a difusión los nuevos valores de a y b
+        sendUpdateConstantsMessage();
 
         // Reiniciar el programa normal, enviando una trama beacon
         calibrationMode = FALSE;
-        sendBeaconMessage();
+        //sendBeaconMessage();
+        call SendBeaconTimer.startOneShot(10);    /* No enviar directamente el mensaje, sino programarlo para que de tiempo a enviar
+                                                     el mensaje de UpdateConstants                                                   */
       
       // Si aun queda una media por obtener, reiniciar el envio de peticiones de medida RSSI
       } else {

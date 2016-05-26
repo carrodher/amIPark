@@ -506,7 +506,22 @@ implementation {
 
         }
       }
-      
+    
+
+    // >>>> UpdateConstants <<<<
+    } else if (length == sizeof(UpdateConstants)) {
+      // Extraer el payload
+      UpdateConstants* msg_rx = (UpdateConstants*)payload;
+
+      printf("Recibido: UpdateConstants");
+      printfflush();
+    
+      a = msg_rx->a;
+      b = msg_rx->b;
+      // Extraer los datos asociados "a" y "b"
+      printf(" | a="); printfFloat(a); printf(" b="); printfFloat(b); printf("\n");
+      printfflush();
+
     } else {
       printf("[ERROR] Recibido mensaje de tipo desconocido\n");
       printfflush();

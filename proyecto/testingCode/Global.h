@@ -10,15 +10,16 @@ enum {
   MSG_TYPE_RSSI = 1,
   RSSI_REQUEST  = 10,
   RSSI_MEASURE  = 11,
-  
-  MSG_TYPE_TDMA      = 2,
-  TDMA_MASTER_BEACON = 20,
-  TDMA_RSSI_REQUEST  = 21,
 
-  MSG_TYPE_VEHICLE   = 3,
-  COMM_SLOT_REQUEST  = 30,
-  FREE_SPOTS_REQUEST = 31,
-  SPOT_TAKEN_UP      = 32,
+  MSG_TYPE_VEHICLE   = 2,
+  COMM_SLOT_REQUEST  = 20,
+  PARKING_INFO_REQUEST = 21,
+  SPOT_TAKEN_UP      = 22,
+
+  MSG_TYPE_PARKING_INFO = 3,
+  PARKING_SPOT = 30,
+  ANCHOR_POSITION = 31,  
+  
 
   TIMER_OFFSET  = 1,
 
@@ -103,7 +104,7 @@ typedef nx_struct TdmaRssiRequestFrame {
   nx_uint8_t  nodeID;               // ID del nodo origen del mensaje
   nx_uint8_t  slots;                // Número de slots de TDMA
   nx_uint16_t tSlot;                // Tiempo dedicado a cada slot
-  nx_uint8_t  slotsOwners[4];       // IDs de los dueños de los slots (nodeIDs) == [[Número de anchors]]
+  nx_uint8_t  slotsOwners[NUMBER_OF_ANCHORS];       // IDs de los dueños de los slots (nodeIDs) == [[Número de anchors]]
 } TdmaRssiRequestFrame;
 
 
@@ -116,8 +117,19 @@ typedef nx_struct VehicleOrder {
 
 typedef nx_struct ParkingInfo {
   nx_uint8_t  nodeID;               // ID del nodo origen del mensaje
-  nx_uint8_t  freeSpots;            // Número de plazas libres
-//ParkingSpot spots[PARKING_SIZE];  // información de las plazas libres
+  nx_uint8_t  order;                // Orden a realizar
+  nx_uint8_t  id;                   // ID del parking / nodo fijo
+  nx_uint16_t x;                    // Coordenada X
+  nx_uint16_t y;                    // Coordenada Y
 } ParkingInfo;
+
+
+typedef nx_struct UpdateConstants {
+  nx_float    a;                    // Parámetro a
+  nx_float    b;                    // Parámetro b
+} UpdateConstants;
+
+
+
 
 #endif
