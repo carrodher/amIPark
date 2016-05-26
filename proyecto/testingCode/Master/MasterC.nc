@@ -699,6 +699,14 @@ implementation {
           printf("Estacionamiento: El vehiculo con ID %d ha estacionado en la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
           printfflush();
           break;
+        case DRIVE_OFF:
+          // Liberar el slot asociado a ese nodo en la trama TDMA beacon del master
+          unLinkVehicle(msg_rx->nodeID);
+          // Marcar la plaza indicada como ocupada
+          parkingStatus.free[msg_rx->extraData] = TRUE;
+          printf("Estacionamiento: El vehiculo con ID %d ha abandonado la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
+          printfflush();
+          break;
 
       }
       

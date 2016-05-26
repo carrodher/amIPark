@@ -500,9 +500,14 @@ implementation {
 
           case REQUESTING_PARKING_INFO:
             //TODO
+           if(place == 0){
+            // Si no esta aparcado, al darle al boton quiere pedir localizacion para aparcar
             status = LOCATING;
-            //break;
-
+           }else {
+            // Si esta aparcado, al darle al boton lo que quiere es desaparcar
+            status = DRIVE_OFF;
+           }
+            break;
           case LOCATING:
             // Resetear acumulador de medidas RSSI
             for (i=0 ; i<numberOfAnchors ; i++) {
@@ -518,6 +523,17 @@ implementation {
              destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
              orderToSend = SPOT_TAKEN_UP;        // Orden de solicitud de slot de comunicación
              idSpot      = place;
+            // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
+             call VehicleOrderTimer.startOneShot( (msg_rx->slots)*(msg_rx->tSlot) + nodeID/10 );
+            //TODO
+            break;
+            case DRIVE_OFF:
+            printf("Estacionamiento: Estoy abandonando la plaza %d\n", place);
+             printfflush();
+             destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
+             orderToSend = DRIVE_OFF;        // Orden de solicitud de slot de comunicación
+             idSpot      = place;
+             place = 0;
             // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
              call VehicleOrderTimer.startOneShot( (msg_rx->slots)*(msg_rx->tSlot) + nodeID/10 );
             //TODO
