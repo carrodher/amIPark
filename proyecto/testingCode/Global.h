@@ -19,7 +19,8 @@ enum {
 
   MSG_TYPE_PARKING_INFO = 3,
   PARKING_SPOT = 30,
-  ANCHOR_POSITION = 31,  
+  ANCHOR_POSITION = 31,
+  NO_SPOTS_AVAILABLE = 32,
   
 
   TIMER_OFFSET  = 1,
@@ -56,21 +57,24 @@ enum {
 
 
   MAX_LINKED_VEHICLES = 5,
-  PARKING_SIZE = 3,
+  PARKING_SIZE = 4,
 
   ERROR      = 20,
   
   SPOT_01_ID = 1,
   SPOT_02_ID = 2,
   SPOT_03_ID = 3,
+  SPOT_04_ID = 4,
 
   SPOT_01_X  = 30,
   SPOT_02_X  = 118,
   SPOT_03_X  = 118,
+  SPOT_04_X  = 30,
 
   SPOT_01_Y  = 115,
   SPOT_02_Y  = 115,
-  SPOT_03_Y  = 30
+  SPOT_03_Y  = 30,
+  SPOT_04_Y  = 30
 };
 
 
@@ -108,8 +112,8 @@ typedef nx_struct TdmaRssiRequestFrame {
   nx_uint8_t  slots;                              // Número de slots de TDMA
   nx_uint16_t tSlot;                              // Tiempo dedicado a cada slot
   nx_uint8_t  slotsOwners[ NUMBER_OF_ANCHORS];    // IDs de los dueños de los slots (nodeIDs) == [[Número de anchors]]
-  nx_uint8_t  X;
-  nx_uint8_t  Y;
+  nx_uint16_t  x;
+  nx_uint16_t  y;
 } TdmaRssiRequestFrame;
 
 

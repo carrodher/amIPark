@@ -36,10 +36,10 @@ implementation {
 
 
   /* =========== [Datos de los anchors] =========== */
-  uint8_t   numberOfAnchors = NUMBER_OF_ANCHORS;
-  uint8_t   anchorId [NUMBER_OF_ANCHORS] = {MASTER_ID, FIJO_1_ID, FIJO_2_ID, FIJO_3_ID};
-  uint16_t  anchorX  [NUMBER_OF_ANCHORS] = {MASTER_X,  FIJO_1_X,  FIJO_2_X,  FIJO_3_X };
-  uint16_t  anchorY  [NUMBER_OF_ANCHORS] = {MASTER_Y,  FIJO_1_Y,  FIJO_2_Y,  FIJO_3_Y };
+  uint8_t   numberOfAnchors = 0;
+  uint8_t   anchorId [NUMBER_OF_ANCHORS]; // = {MASTER_ID, FIJO_1_ID, FIJO_2_ID, FIJO_3_ID};
+  uint16_t  anchorX  [NUMBER_OF_ANCHORS]; // = {MASTER_X,  FIJO_1_X,  FIJO_2_X,  FIJO_3_X };
+  uint16_t  anchorY  [NUMBER_OF_ANCHORS]; // = {MASTER_Y,  FIJO_1_Y,  FIJO_2_Y,  FIJO_3_Y };
   /* ============================================== */
 
 
@@ -56,6 +56,7 @@ implementation {
   float     b = -50.093;      //
 
   ParkingSpot spot[PARKING_SIZE];       // Vector con información de cada plaza libre recibida
+  uint8_t     numberOfFreeSpots = 0;    // Número de plazas libres
   /* ============================================== */
 
 
@@ -83,7 +84,7 @@ implementation {
   void     sendVehicleOrderMessage();  
   void     sendBeaconMessage();
   void     newRssiMeasureReceived(uint8_t nodeId);
-  uint16_t am_i_parked(uint16_t movilXr, uint16_t movilYr);
+  void     am_i_parked(uint16_t movilXr, uint16_t movilYr);
   /* ============================================== */
 
 
@@ -148,44 +149,26 @@ implementation {
     return numerator/denominator;
   }
 
-/**
+
+
+  /**
   *   Comprueba si esta aparcado en una de las plazas de aparcamiento
   *   Devuelve 0 si no esta aparcado
   */
-  uint16_t am_i_parked(uint16_t movilXr, uint16_t movilYr) {
-    if(movilXr <= (SPOT_01_X+ERROR) && movilXr >= (SPOT_01_X-ERROR) && movilYr <= (SPOT_01_Y+ERROR) && movilYr >= (SPOT_01_Y-ERROR)){
-      parkedAt = 0;
-      parked   = TRUE;
-      status   = PARKED;
-    }else if(movilXr <= (SPOT_02_X+ERROR) && movilXr >= (SPOT_02_X-ERROR) && movilYr <= (SPOT_02_Y+ERROR) && movilYr >= (SPOT_02_Y-ERROR)){
-      parkedAt = 1;
-      parked   = TRUE;
-      status = PARKED;
-    }else if(movilXr <= (SPOT_03_X+ERROR) && movilXr >= (SPOT_03_X-ERROR) && movilYr <= (SPOT_03_Y+ERROR) && movilYr >= (SPOT_03_Y-ERROR)){
-      parkedAt = 2;
-      parked   = TRUE;
-      status = PARKED;
+  void am_i_parked(uint16_t movilXr, uint16_t movilYr) {
+    // Recorrer los datos de cada plaza libre disponible
+    for (i=0 ; i<numberOfFreeSpots ; i++) {
+      // Comparar la posición actual con la de la plaza
+      if ( movilXr <= (spot[i].x + ERROR) && movilXr >= (spot[i].x - ERROR) && movilYr <= (spot[i].y + ERROR) && movilYr >= (spot[i].y - ERROR) ) {
+        parkedAt = spot[i].id;    // Guardar ID de la plaza en que se ha aparcado
+        parked   = TRUE;          // Se ha aparcado
+        status   = PARKED;        // Pasar al estado "Aparcado"
+        
+        printf("He aparcado en la plaza %d\n", parkedAt);
+        printfflush();
+      }
     }
-    return parkedAt;
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -406,8 +389,8 @@ implementation {
       // Añadir el número de slots actualmente en uso y el tiempo reservado a cada cual
       msg_tx->slots = numberOfAnchors;
       msg_tx->tSlot = TDMA_RSSI_REQUEST_SLOT_TIME;
-      msg_tx->X = movilX;
-      msg_tx->Y = movilY;
+      msg_tx->x = movilX;
+      msg_tx->y = movilY;
 
       // Asignar los slots a los IDs correspondientes
       for (i=0 ; i<numberOfAnchors ; i++) {
@@ -503,7 +486,7 @@ implementation {
 
             // Comprobar si se está ocupando ya una plaza del parking
             if(!parked) {
-              // Si no esta aparcado, al darle al boton quiere pedir localizacion para aparcar
+              // Si no esta aparcado, el siguiente paso sería solicitar la informacion del parking
               status = REQUESTING_PARKING_INFO;
             } else {
               // Si esta aparcado, al darle al boton lo que quiere es liberar la plaza y salir del parking
@@ -512,8 +495,13 @@ implementation {
             break;
 
           case REQUESTING_PARKING_INFO:
-            //TODO
-            status = LOCATING;
+            // Solicitar al master información del parking
+            numberOfFreeSpots = 0;                    // Resetear variables que se han de deducir de los datos a recibir
+            numberOfAnchors   = 0;                    //
+            destination = msg_rx->nodeID;             // Destino el nodo master que envió el beacon
+            orderToSend = PARKING_INFO_REQUEST;       // Orden de solicitud de información del parking
+            // Enviar orden de solicitud de información del parking
+            call VehicleOrderTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
             break;
 
           case LOCATING:
@@ -526,11 +514,9 @@ implementation {
             break;
 
           case PARKED:
-            printf("He aparcado en la plaza %d\n", parkedAt);
-            printfflush();
             destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
             orderToSend = SPOT_TAKEN_UP;        // Orden de solicitud de slot de comunicación
-            // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
+            // Enviar orden de solicitud de ocupación de una plaza
             call VehicleOrderTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
             break;
 
@@ -540,14 +526,12 @@ implementation {
             destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
             orderToSend = SPOT_RELEASED;        // Orden de solicitud de slot de comunicación
             parked = FALSE;                     // Ya no se tendría ninguna plaza de parking
-            // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
+            // Enviar orden de solicitud de liberación de una plaza
             call VehicleOrderTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
-            //TODO
             break;
 
         }
 
-        //TODO call RssiResponseTimer.startOneShot(assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET);
 
       } else {
         printf("No se tiene slot asociado\n");
@@ -599,6 +583,52 @@ implementation {
       // Extraer los datos asociados "a" y "b"
       printf(" | a="); printfFloat(a); printf(" b="); printfFloat(b); printf("\n");
       printfflush();
+
+
+    // >>>> ParkingInfo <<<<
+    } else if (length == sizeof(ParkingInfo)) {
+      // Extraer el payload
+      ParkingInfo* msg_rx = (ParkingInfo*)payload;
+
+      printf("Recibido: ParkingInfo / Orden: %d\n", msg_rx->order);
+      printfflush();
+    
+      // Determinar la orden recibida
+      switch (msg_rx->order) {
+
+        case PARKING_SPOT:
+          // Almacenar la nueva plaza de parking libre recibida
+          spot[numberOfFreeSpots].id = msg_rx->id;
+          spot[numberOfFreeSpots].x  = msg_rx->x;
+          spot[numberOfFreeSpots].y  = msg_rx->y;
+          numberOfFreeSpots++;      // Contabilizar una nueva plaza libre
+          status = LOCATING;        // Como se tiene al menos una plaza, el siguiente estado será el de solicitar localización
+          printf("Recibida plaza libre con id: %d [x=%d / y=%d]\n", msg_rx->id, msg_rx->x, msg_rx->y);
+          printfflush();
+          break;
+
+        case ANCHOR_POSITION:
+          // Almacenar el nuevo anchor recibido
+          anchorId[numberOfAnchors] = msg_rx->id;
+          anchorX[numberOfAnchors]  = msg_rx->x;
+          anchorY[numberOfAnchors]  = msg_rx->y;
+          numberOfAnchors++;        // Contabilizar un nuevo anchor
+          printf("Recibida informacion del anchor con id: %d [x=%d / y=%d]\n", msg_rx->id, msg_rx->x, msg_rx->y);
+          printfflush();
+          break;
+      
+        case NO_SPOTS_AVAILABLE:
+          // El parking no tiene plazas libres
+          printf("Master informa de que no hay plazas libres\n");
+          printfflush();
+          // Volver al estado de reposo
+          status = RESTING;
+          turnOnLed(RED,2000);
+          turnOnLed(GREEN,2000);
+          break;
+
+      }
+
 
     } else {
       printf("[ERROR] Recibido mensaje de tipo desconocido\n");
@@ -659,7 +689,7 @@ implementation {
     printfflush();
 
     // Inicializar variables
-    for (i=0 ; i<numberOfAnchors ; i++) {
+    for (i=0 ; i<NUMBER_OF_ANCHORS ; i++) {
       rssiOfAnchor[i] = 0;
     }
 
