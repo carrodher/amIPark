@@ -528,6 +528,7 @@ implementation {
       TdmaRssiRequestFrame* msg_rx = (TdmaRssiRequestFrame*)payload;
 
       printf("Recibido: TdmaRssiRequestFrame\n");
+      printf("X = %d, Y = %d\n", msg_rx->X, msg_rx->Y);
       printfflush();
       
       // Si se tiene un slot asociado...
@@ -574,6 +575,8 @@ implementation {
           unLinkVehicle(msg_rx->nodeID);
           // Marcar la plaza indicada como ocupada
           parkingStatus.free[msg_rx->extraData] = FALSE;
+          printf("Estacionamiento: El vehiculo con ID %d ha estacionado en la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
+          printfflush();
           break;
 
       }
