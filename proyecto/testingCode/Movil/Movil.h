@@ -7,7 +7,7 @@ enum {
   REQUESTING_PARKING_INFO = 2,
   LOCATING                = 3,
   PARKED                  = 4,
-  DRIVE_OFF				  = 5
+  DRIVE_OFF				        = 5
 };
 
 

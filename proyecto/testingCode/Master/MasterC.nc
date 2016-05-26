@@ -696,15 +696,18 @@ implementation {
           unLinkVehicle(msg_rx->nodeID);
           // Marcar la plaza indicada como ocupada
           parkingStatus.free[msg_rx->extraData] = FALSE;
-          printf("Estacionamiento: El vehiculo con ID %d ha estacionado en la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
+          parkingStatus.vehicleID[msg_rx->extraData] = msg_rx->nodeID;
+          printf("El vehiculo con ID %d ha estacionado en la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
           printfflush();
           break;
-        case DRIVE_OFF:
+
+        case SPOT_RELEASED:
           // Liberar el slot asociado a ese nodo en la trama TDMA beacon del master
           unLinkVehicle(msg_rx->nodeID);
           // Marcar la plaza indicada como ocupada
           parkingStatus.free[msg_rx->extraData] = TRUE;
-          printf("Estacionamiento: El vehiculo con ID %d ha abandonado la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
+          parkingStatus.vehicleID[msg_rx->extraData] = 0;
+          printf("El vehiculo con ID %d ha abandonado la plaza %d\n", msg_rx->nodeID, msg_rx->extraData);
           printfflush();
           break;
 

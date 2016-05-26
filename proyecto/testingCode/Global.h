@@ -15,7 +15,7 @@ enum {
   COMM_SLOT_REQUEST    = 20,
   PARKING_INFO_REQUEST = 21,
   SPOT_TAKEN_UP        = 22,
-  DRIVE_OFF =          = 23,
+  SPOT_RELEASED        = 23,
 
   MSG_TYPE_PARKING_INFO = 3,
   PARKING_SPOT = 30,

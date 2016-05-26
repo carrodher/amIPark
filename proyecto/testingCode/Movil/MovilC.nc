@@ -46,18 +46,16 @@ implementation {
   /* ========= [Variables de información] ========= */           
   uint8_t   destination;                // Destino del siguiente mensaje a enviar (nodeID/Difusión)
   uint8_t   orderToSend;                // Almacena la orden a enviar en el siguiente mensaje
-  uint8_t   idSpot;                     // Id de la plaza en que se aparca (extraData)
+  uint8_t   parkedAt;                   // Id de la plaza en que se aparca (extraData)
+  bool      parked = FALSE;             // Indica si se está aparcado
 
-
-
-  int16_t   rssiValueReceived;              // Medida RECIBIDA de RSSI
+  int16_t   rssiValueReceived;                // Medida RECIBIDA de RSSI
   int16_t   rssiOfAnchor[NUMBER_OF_ANCHORS];  // Medida asociada a cada anchor
 
   float     a = -21.593;      // Variables para localización
   float     b = -50.093;      //
 
   ParkingSpot spot[PARKING_SIZE];       // Vector con información de cada plaza libre recibida
-  int16_t place = 0;
   /* ============================================== */
 
 
@@ -154,19 +152,21 @@ implementation {
   *   Comprueba si esta aparcado en una de las plazas de aparcamiento
   *   Devuelve 0 si no esta aparcado
   */
-  uint16_t am_i_parked(uint16_t movilXr, uint16_t movilYr){
-    uint16_t parked = 0;
+  uint16_t am_i_parked(uint16_t movilXr, uint16_t movilYr) {
     if(movilXr <= (SPOT_01_X+ERROR) && movilXr >= (SPOT_01_X-ERROR) && movilYr <= (SPOT_01_Y+ERROR) && movilYr >= (SPOT_01_Y-ERROR)){
-      parked = 1;
-      status = PARKED;
+      parkedAt = 0;
+      parked   = TRUE;
+      status   = PARKED;
     }else if(movilXr <= (SPOT_02_X+ERROR) && movilXr >= (SPOT_02_X-ERROR) && movilYr <= (SPOT_02_Y+ERROR) && movilYr >= (SPOT_02_Y-ERROR)){
-      parked = 2;
+      parkedAt = 1;
+      parked   = TRUE;
       status = PARKED;
     }else if(movilXr <= (SPOT_03_X+ERROR) && movilXr >= (SPOT_03_X-ERROR) && movilYr <= (SPOT_03_Y+ERROR) && movilYr >= (SPOT_03_Y-ERROR)){
-      parked = 3;
+      parkedAt = 2;
+      parked   = TRUE;
       status = PARKED;
     }
-    return parked;
+    return parkedAt;
   }
 
 
@@ -207,7 +207,7 @@ implementation {
     printf("[INFO] Nueva localizacion: x=%d, y=%d\n", movilX, movilY);
     printfflush();
 
-    place = am_i_parked(movilX, movilY);
+    am_i_parked(movilX, movilY);
   }
 
 
@@ -349,7 +349,12 @@ implementation {
 
         case SPOT_TAKEN_UP:
           // Adjuntar el ID de la plaza ocupada
-          msg_tx->extraData = idSpot;
+          msg_tx->extraData = parkedAt;
+          break;
+
+        case SPOT_RELEASED:
+          // Adjuntar el ID de la plaza liberada
+          msg_tx->extraData = parkedAt;
           break;
 
       }
@@ -359,7 +364,7 @@ implementation {
         // Enviar y comprobar el resultado
         if(call AMSend.send(destination, &pkt, messageLength) == SUCCESS) {
           busy = TRUE;      // Ocupado
-          printf("[DEBUG] Enviado mensaje VehicleOrder\n");
+          printf("[DEBUG] Enviado mensaje VehicleOrder / Orden: %d\n", orderToSend);
           printfflush();
           // Notificación visual de envio de mensaje
           turnOnLed(RED, LED_BLINK_TIME);
@@ -494,20 +499,23 @@ implementation {
             break;
     
           case WAITING_FOR_COMM_SLOT:
-            // Si se llega aquí es porque se ha conseguido un slot para transmitir, proseguir al siguiente estado
-            status = REQUESTING_PARKING_INFO;
-            // Sin "break;" => Se salta al siguiente estado
+            // Si se llega aquí es porque se ha conseguido un slot para transmitir
+
+            // Comprobar si se está ocupando ya una plaza del parking
+            if(!parked) {
+              // Si no esta aparcado, al darle al boton quiere pedir localizacion para aparcar
+              status = REQUESTING_PARKING_INFO;
+            } else {
+              // Si esta aparcado, al darle al boton lo que quiere es liberar la plaza y salir del parking
+              status = DRIVE_OFF;
+            }
+            break;
 
           case REQUESTING_PARKING_INFO:
             //TODO
-           if(place == 0){
-            // Si no esta aparcado, al darle al boton quiere pedir localizacion para aparcar
             status = LOCATING;
-           }else {
-            // Si esta aparcado, al darle al boton lo que quiere es desaparcar
-            status = DRIVE_OFF;
-           }
             break;
+
           case LOCATING:
             // Resetear acumulador de medidas RSSI
             for (i=0 ; i<numberOfAnchors ; i++) {
@@ -518,24 +526,22 @@ implementation {
             break;
 
           case PARKED:
-            printf("Estacionamiento: He aparcado en la plaza %d\n", place);
-             printfflush();
-             destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
-             orderToSend = SPOT_TAKEN_UP;        // Orden de solicitud de slot de comunicación
-             idSpot      = place;
+            printf("He aparcado en la plaza %d\n", parkedAt);
+            printfflush();
+            destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
+            orderToSend = SPOT_TAKEN_UP;        // Orden de solicitud de slot de comunicación
             // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
-             call VehicleOrderTimer.startOneShot( (msg_rx->slots)*(msg_rx->tSlot) + nodeID/10 );
-            //TODO
+            call VehicleOrderTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
             break;
-            case DRIVE_OFF:
-            printf("Estacionamiento: Estoy abandonando la plaza %d\n", place);
-             printfflush();
-             destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
-             orderToSend = DRIVE_OFF;        // Orden de solicitud de slot de comunicación
-             idSpot      = place;
-             place = 0;
+
+          case DRIVE_OFF:
+            printf("Estoy abandonando la plaza %d\n", parkedAt);
+            printfflush();
+            destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
+            orderToSend = SPOT_RELEASED;        // Orden de solicitud de slot de comunicación
+            parked = FALSE;                     // Ya no se tendría ninguna plaza de parking
             // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
-             call VehicleOrderTimer.startOneShot( (msg_rx->slots)*(msg_rx->tSlot) + nodeID/10 );
+            call VehicleOrderTimer.startOneShot( assignedSlot * (msg_rx->tSlot) + TIMER_OFFSET );
             //TODO
             break;
 
@@ -573,14 +579,7 @@ implementation {
             break;
 
           case PARKED:
-             printf("Estacionamiento: He aparcado en la plaza %d\n", place);
-             printfflush();
-             destination = msg_rx->nodeID;       // Destino el nodo master que envió el beacon
-             orderToSend = SPOT_TAKEN_UP;        // Orden de solicitud de slot de comunicación
-             idSpot      = place;
-            // Enviar orden en el slot dedicado a nuevas asociaciones de vehículos, al final de los slots reservados
-             call VehicleOrderTimer.startOneShot( (msg_rx->slots)*(msg_rx->tSlot) + nodeID/10 );
-             //sendParkedState(place)
+            // Nada que hacer
             break;
 
         }
