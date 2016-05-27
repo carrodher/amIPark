@@ -3,12 +3,14 @@
 [![Linkedin](https://img.shields.io/badge/LinkedIn-Carlos-blue.svg)](https://es.linkedin.com/in/carlosrodriguezhernandez)
 [![Twitter](https://img.shields.io/badge/Twitter-carrodher-blue.svg)](https://twitter.com/carrodher)
 [![License](https://img.shields.io/badge/License-BY/NC-yellow.svg)](https://github.com/carrodher/tinyOS/blob/master/LICENSE.md)
+[![Build Status](https://travis-ci.org/carrodher/tinyOS.svg?branch=master)](https://travis-ci.org/carrodher/tinyOS)
 
 Proyectos y prácticas con tinyOS para TelosB como parte de la asignatura "Redes de Sensores y Sistemas Autónomos"
 
 ## Contenido
 * [Instalación](#instalación)
 * [Uso](#uso)
+* [Asignatura](#asignatura)
 
 ## Instalación
 Añadimos dos repositorios donde se encuentran los paquetes necesarios. Para ello creamos el fichero /etc/apt/sources.list.d/tinyprod-debian.list y lo abrimos con cualquier editor `sudo vim /etc/apt/sources.list.d/tinyprod-debian.list` añadiendo las siguientes líneas:
@@ -75,3 +77,10 @@ Por último, compilamos y cargamos el ejemplo BlinkFail en el dispositivo:
 cd /home/user/tinyos-main/apps/tutorials/BlinkFail
 make telosb install,ID
 ```
+## Asignatura
+#### [Práctica 1](https://github.com/carrodher/tinyOS/tree/master/practica1)
+#### [Práctica 2](https://github.com/carrodher/tinyOS/tree/master/practica2)
+#### [Práctica 3](https://github.com/carrodher/tinyOS/tree/master/practica3)
+#### [Práctica 4](https://github.com/carrodher/tinyOS/tree/master/practica4)
+#### [Práctica 5](https://github.com/carrodher/tinyOS/tree/master/practica5)
+#### [Proyecto](https://github.com/carrodher/tinyOS/tree/master/proyecto)
