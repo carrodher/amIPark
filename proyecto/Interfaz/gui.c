@@ -3,6 +3,7 @@
 #include <cairo.h>
 #include <gtk/gtk.h>
 #include <math.h>
+#include <regex.h>
 
 // Fichero con la GUI creado por glade
 #define BUILDER_FILE "builder.glade"
@@ -22,6 +23,11 @@ struct gui {
 
 	// Distingue las plazas
 	int p1, p2, p3, p4, flag;
+
+	// Expresiones regulares
+	char str[512];		// Cadena leída
+	regex_t regex;
+	char c;				// Guarda el # (basura)
 };
 
 // Callback para dibujar los círculos
@@ -32,12 +38,13 @@ static gboolean timer_cb(gpointer gui);
 int main(int argc, char **argv) {
 	struct gui *g;
 
-	// Struct
+	// Struct para pasar todo los datos entre funciones
 	g = (struct gui *)malloc(sizeof(struct gui));
 	if (!g) {
 		fprintf(stderr, "Error al reservar struct\n");
 		return -1;
 	}
+
 	gtk_init(&argc, &argv);
 
 	// Builder de glade
@@ -53,7 +60,13 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	// Objects
+	// Compila regex
+	if (regcomp(&(g->regex), "# [0-1] [0-1] [0-1] [0-1]", 0)) {
+		fprintf(stderr, "Error al compilar regex\n");
+		exit(1);
+	}
+
+	// Objetos
 	g->window = GTK_WIDGET(gtk_builder_get_object(g->builder,"window"));
 	g->darea1 = GTK_WIDGET(gtk_builder_get_object(g->builder,"darea1"));
 	g->darea2 = GTK_WIDGET(gtk_builder_get_object(g->builder,"darea2"));
@@ -67,7 +80,7 @@ int main(int argc, char **argv) {
 	g->p4 = 0;
 	g->flag = 0;
 
-	// Signals
+	// Señales
 	g_signal_connect(g->window,"destroy",G_CALLBACK(gtk_main_quit),NULL);
 	g_signal_connect(g->darea1, "draw", G_CALLBACK(onDrawEvent), g);
 	g_signal_connect(g->darea2, "draw", G_CALLBACK(onDrawEvent), g);
@@ -77,35 +90,55 @@ int main(int argc, char **argv) {
 
 	// Muestra la ventana
 	gtk_widget_show_all(g->window);
+	// Comienza el bucle con el primer evento de timer
 	g_timeout_add(1, timer_cb, g);
 
 	// Inicia la función que ejecuta la GUI
 	gtk_main();
 
-	fclose(g->file);
+	regfree(&(g->regex));	// Libera reserva para regex
+	fclose(g->file);		// Cierra el fichero
+
 	return 0;
 }
 
 // Callback para el timer
 static gboolean timer_cb(gpointer gui) {
-	printf("Timer!\n");
-	struct gui *g = (struct gui *)gui;
-	int width, height, p1, p2, p3, p4;
+	printf("\nTimer!\n");
 
-	int ret = fscanf(g->file, "%d %d %d %d",&(g->p1),&(g->p2),&(g->p3),&(g->p4));
-	if (ferror(g->file) || (ret != 4)) {
-		perror("Error al leer");
+	struct gui *g = (struct gui *)gui;
+
+	// Lee una línea completa del fichero
+	if(fgets(g->str, 512, g->file) != NULL) {
+		printf("Cadena leída: %s", g->str);
+	}
+	else
+		perror("Error al leer cadena");
+
+	// Ejecuta regex sobre la línea leída
+	if (!regexec(&(g->regex), g->str, 0, NULL, 0)) {
+		// Si hay match: Saca los valores de las plazas para pintarlos
+		sscanf(g->str, "%c %d %d %d %d",&(g->c),&(g->p1),&(g->p2),&(g->p3),&(g->p4));
+		printf("Match => %d %d %d %d [NUEVO] \n", g->p1, g->p2, g->p3, g->p4);
+	}
+	else {
+		// Si no hay match: Mantiene para pintar los últimos valores
+		printf("No Match => %d %d %d %d [ANTERIOR] \n", g->p1, g->p2, g->p3, g->p4);
 	}
 
+	// Vuelve a pintar los 4 círculos
 	gtk_widget_queue_draw(GTK_WIDGET(g->darea1));
 	gtk_widget_queue_draw(GTK_WIDGET(g->darea2));
 	gtk_widget_queue_draw(GTK_WIDGET(g->darea3));
 	gtk_widget_queue_draw(GTK_WIDGET(g->darea4));
 
+	// Tras 3" vuelve a al inicio de esta función
 	g_timeout_add(3000, timer_cb, g);
+
 	return FALSE;
 }
 
+// Callback para pintar los círculos
 static gboolean onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer gui) {
 	struct gui *g = (struct gui *)gui;
 	GtkWidget *win = gtk_widget_get_toplevel(widget);
@@ -121,6 +154,7 @@ static gboolean onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer gui) {
 	// Posición del texto
 	cairo_move_to(cr, 50, 60);
 
+	// En función del flag determina el área que toca pintar
 	switch (g->flag) {
 		case 0:
 			/* Texto */
@@ -202,12 +236,11 @@ static gboolean onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer gui) {
 	}
 	cairo_fill(cr);
 
+	// Actualiza el flag del área para la siguiente entrada
 	if (g->flag == 3)
 		g->flag = 0;
 	else
 		g->flag++;
-
-	printf("%d %d %d %d\n", g->p1, g->p2, g->p3, g->p4);
 
 	return FALSE;
 }
