@@ -3,3 +3,6 @@ build/
 
 # Ejecutable C
 *.out
+
+# Datos de ejecuciones
+*.data
