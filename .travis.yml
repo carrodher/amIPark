@@ -12,4 +12,4 @@ notifications:
 script:
     # Interfaz
     - cd ./proyecto/Interfaz
-    - make clean && make
+    - make all
