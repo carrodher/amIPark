@@ -1,12 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cairo.h>
-#include <gtk/gtk.h>
-#include <math.h>
-#include <regex.h>
-
-// Fichero con la GUI creado por glade
-#define BUILDER_FILE "builder.glade"
+#include "gui.h"
 
 // Estructura para los datos de la interfaz
 struct gui {
@@ -18,8 +10,12 @@ struct gui {
 	GtkWidget *darea3;
 	GtkWidget *darea4;
 
-	// Fichero con los datos del mote
-	FILE *file;
+	// Timer
+	int timer;
+
+	// FicheroS con los datos del mote y el log
+	FILE *fileMote;
+	FILE *fileLog;
 
 	// Distingue las plazas
 	int p1, p2, p3, p4, flag;
@@ -28,21 +24,41 @@ struct gui {
 	char str[512];		// Cadena leída
 	regex_t regex;
 	char c;				// Guarda el # (basura)
-};
 
-// Callback para dibujar los círculos
-static gboolean onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer gui);
-// Callback para el timer
-static gboolean timer_cb(gpointer gui);
+	// Fecha/Hora
+	time_t rawtime;
+};
 
 int main(int argc, char **argv) {
 	struct gui *g;
+	// Getopt
+	int option_index, c;
+	int time = FALSE;
 
 	// Struct para pasar todo los datos entre funciones
 	g = (struct gui *)malloc(sizeof(struct gui));
 	if (!g) {
 		fprintf(stderr, "Error al reservar struct\n");
 		return -1;
+	}
+
+	while ((c = getopt_long(argc, argv, "t:h", long_options, &option_index)) != -1) {
+		switch (c) {
+			case 't':
+				g->timer = strtol(optarg, NULL, 0);
+				time = TRUE;
+				break;
+			case 'h':
+			case '?':
+				printf("  Uso:\n\t./gui.out -t <miliSeg>\n");
+				return -1;
+				break;
+		}
+	}
+
+	// Si no se ha introducido => Valor por defecto (1ms)
+	if (time == FALSE) {
+		g->timer = 1;
 	}
 
 	gtk_init(&argc, &argv);
@@ -54,9 +70,15 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	// Abre el fichero y comprueba la apertura
-	if (!(g->file = fopen("park.data", "r"))) {
+	// Abre el fichero del mote y comprueba la apertura
+	if (!(g->fileMote = fopen("park.data", "r"))) {
 		fprintf(stderr, "No se puede abrir el fichero \"park.data\"\n");
+		return -1;
+	}
+
+	// Abre el fichero de log y comprueba la apertura
+	if (!(g->fileLog = fopen("park.log", "w"))) {
+		fprintf(stderr, "No se puede abrir el fichero \"park.log\"\n");
 		return -1;
 	}
 
@@ -96,8 +118,9 @@ int main(int argc, char **argv) {
 	// Inicia la función que ejecuta la GUI
 	gtk_main();
 
-	regfree(&(g->regex));	// Libera reserva para regex
-	fclose(g->file);		// Cierra el fichero
+	regfree(&(g->regex));		// Libera reserva para regex
+	fclose(g->fileMote);		// Cierra el fichero mote
+	fclose(g->fileLog);		// Cierra el fichero mote
 
 	return 0;
 }
@@ -109,7 +132,7 @@ static gboolean timer_cb(gpointer gui) {
 	struct gui *g = (struct gui *)gui;
 
 	// Lee una línea completa del fichero
-	if(fgets(g->str, 512, g->file) != NULL) {
+	if(fgets(g->str, 512, g->fileMote) != NULL) {
 		printf("Cadena leída: %s", g->str);
 	}
 	else
@@ -120,20 +143,30 @@ static gboolean timer_cb(gpointer gui) {
 		// Si hay match: Saca los valores de las plazas para pintarlos
 		sscanf(g->str, "%c %d %d %d %d",&(g->c),&(g->p1),&(g->p2),&(g->p3),&(g->p4));
 		printf("Match => %d %d %d %d [NUEVO] \n", g->p1, g->p2, g->p3, g->p4);
+
+		// Vuelve a pintar los círculos con los nuevos valores
+		gtk_widget_queue_draw(GTK_WIDGET(g->darea1));
+		gtk_widget_queue_draw(GTK_WIDGET(g->darea2));
+		gtk_widget_queue_draw(GTK_WIDGET(g->darea3));
+		gtk_widget_queue_draw(GTK_WIDGET(g->darea4));
+
+		// Reproduce el sonido cuando hay algún cambio
+		system("mpg123 ./sound.mp3");
+
+		// Guarda un log con los aparcamientos/salidas
+		time(&(g->rawtime));
+
+		fprintf(g->fileLog,"%s\tp1=%d p2=%d p3=%d p4=%d\n", asctime(localtime(&(g->rawtime))), g->p1, g->p2, g->p3, g->p4);
+		fprintf(g->fileLog,"\t%d plazas ocupadas\n", g->p1+g->p2+g->p3+g->p4);
+		fprintf(g->fileLog,"\t%d plazas libres\n", 4-(g->p1+g->p2+g->p3+g->p4));
 	}
 	else {
-		// Si no hay match: Mantiene para pintar los últimos valores
+		// Si no hay match: No pinta los círculos de nuevo, deja los que hay
 		printf("No Match => %d %d %d %d [ANTERIOR] \n", g->p1, g->p2, g->p3, g->p4);
 	}
 
-	// Vuelve a pintar los 4 círculos
-	gtk_widget_queue_draw(GTK_WIDGET(g->darea1));
-	gtk_widget_queue_draw(GTK_WIDGET(g->darea2));
-	gtk_widget_queue_draw(GTK_WIDGET(g->darea3));
-	gtk_widget_queue_draw(GTK_WIDGET(g->darea4));
-
-	// Tras 3" vuelve a al inicio de esta función
-	g_timeout_add(1, timer_cb, g);
+	// Tras 1ms vuelve a al inicio de esta función
+	g_timeout_add(g->timer, timer_cb, g);
 
 	return FALSE;
 }

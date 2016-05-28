@@ -5,4 +5,5 @@ build/
 *.out
 
 # Datos de ejecuciones
-*.data
+park.data
+park.log
