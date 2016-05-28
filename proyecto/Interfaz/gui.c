@@ -133,7 +133,7 @@ static gboolean timer_cb(gpointer gui) {
 	gtk_widget_queue_draw(GTK_WIDGET(g->darea4));
 
 	// Tras 3" vuelve a al inicio de esta función
-	g_timeout_add(3000, timer_cb, g);
+	g_timeout_add(1, timer_cb, g);
 
 	return FALSE;
 }
