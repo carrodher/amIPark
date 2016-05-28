@@ -7,6 +7,11 @@ do
 	c=$(shuf -i 0-1 -n 1)
 	d=$(shuf -i 0-1 -n 1)
 
-	echo $a $b $c $d
-	sleep 2
+	if [[ $a+$b+$c+$d -eq 3 ]]; then
+		echo "# "$a $b $c $d
+	else
+		echo "Texto de prueba!!"
+	fi
+
+	sleep 1
 done
