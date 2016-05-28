@@ -52,7 +52,7 @@ enum {
 	MAX_LINKED_VEHICLES = 5,
 	PARKING_SIZE = 4,
 
-	ERROR      = 20,
+	ERROR      = 10,
 
 	SPOT_01_ID = 1,
 	SPOT_02_ID = 2,
@@ -60,13 +60,13 @@ enum {
 	SPOT_04_ID = 4,
 
 	SPOT_01_X  = 30,
-	SPOT_02_X  = 118,
-	SPOT_03_X  = 118,
-	SPOT_04_X  = 30,
+	SPOT_02_X  = 30,
+	SPOT_03_X  = 115,
+	SPOT_04_X  = 115,
 
-	SPOT_01_Y  = 115,
+	SPOT_01_Y  = 30,
 	SPOT_02_Y  = 115,
-	SPOT_03_Y  = 30,
+	SPOT_03_Y  = 115,
 	SPOT_04_Y  = 30
 };
 

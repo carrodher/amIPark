@@ -252,11 +252,11 @@ implementation {
   *   Calcula el valor de las constantes
   */
   void computeConstants (float rssi1, float rssi2, float d1, float d2) {
-    float tmp = logf(d1/d2)/2.303;
-    a = (rssi1 - rssi2) / tmp;
+    float tmp = logf(d2/d1)/2.303;
+    a = (rssi2 - rssi1) / tmp;
 
-    tmp = logf(d2)/2.303;
-    b = rssi2 - (a * tmp);
+    tmp = logf(d1)/2.303;
+    b = rssi1 - (a * tmp);
 
     turnOnLed(GREEN,1000);
 
@@ -1011,6 +1011,9 @@ implementation {
 
     // Notificar visualmente que el mote está encendido
     turnOnLed(BLUE,0);
+
+    // Imprimir información para la UI (para resetearla)
+    printDataForUI();
   }
 
 
