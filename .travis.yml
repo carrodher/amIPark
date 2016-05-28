@@ -9,6 +9,9 @@ notifications:
         on_failure: never
     slack: proyectoscarlos:quyUXvpLXPctdsK53REk5ypl
 
+before_install:
+  - sudo apt-get install libgtk2.0-dev
+
 script:
     # Interfaz
     - cd ./proyecto/Interfaz
