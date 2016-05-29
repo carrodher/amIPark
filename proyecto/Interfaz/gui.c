@@ -5,6 +5,7 @@
 #include <math.h>		// Tamaño círculos
 #include <regex.h>		// Expresiones regulares
 #include <time.h>		// Fecha/Hora
+#include <getopt.h>		// Entrada de parámetros
 
 // Fichero con la GUI creado por glade
 #define BUILDER_FILE "builder.glade"
@@ -18,6 +19,9 @@ struct gui {
 	GtkWidget *darea2;
 	GtkWidget *darea3;
 	GtkWidget *darea4;
+
+	// Timer
+	int timer;
 
 	// FicheroS con los datos del mote y el log
 	FILE *fileMote;
@@ -35,6 +39,14 @@ struct gui {
 	time_t rawtime;
 };
 
+// Estrcutura para getopt
+static struct option long_options[] =
+{
+    {"timer",	required_argument,	0,  't'},
+	{"help",	no_argument,		0,  'h'},
+    {0, 0, 0, 0}
+};
+
 // Callback para dibujar los círculos
 static gboolean onDrawEvent(GtkWidget *widget, cairo_t *cr, gpointer gui);
 // Callback para el timer
@@ -42,12 +54,34 @@ static gboolean timer_cb(gpointer gui);
 
 int main(int argc, char **argv) {
 	struct gui *g;
+	// Getopt
+	int option_index, c;
+	int time = FALSE;
 
 	// Struct para pasar todo los datos entre funciones
 	g = (struct gui *)malloc(sizeof(struct gui));
 	if (!g) {
 		fprintf(stderr, "Error al reservar struct\n");
 		return -1;
+	}
+
+	while ((c = getopt_long(argc, argv, "t:h", long_options, &option_index)) != -1) {
+		switch (c) {
+			case 't':
+				g->timer = strtol(optarg, NULL, 0);
+				time = TRUE;
+				break;
+			case 'h':
+			case '?':
+				printf("  Uso:\n\t./gui.out -t <miliSeg>\n");
+				return -1;
+				break;
+		}
+	}
+
+	// Si no se ha introducido => Valor por defecto (1ms)
+	if (time == FALSE) {
+		g->timer = 1;
 	}
 
 	gtk_init(&argc, &argv);
@@ -155,7 +189,7 @@ static gboolean timer_cb(gpointer gui) {
 	}
 
 	// Tras 1ms vuelve a al inicio de esta función
-	g_timeout_add(1, timer_cb, g);
+	g_timeout_add(g->timer, timer_cb, g);
 
 	return FALSE;
 }
