@@ -120,19 +120,22 @@ static gboolean timer_cb(gpointer gui) {
 		// Si hay match: Saca los valores de las plazas para pintarlos
 		sscanf(g->str, "%c %d %d %d %d",&(g->c),&(g->p1),&(g->p2),&(g->p3),&(g->p4));
 		printf("Match => %d %d %d %d [NUEVO] \n", g->p1, g->p2, g->p3, g->p4);
+
+		// Vuelve a pintar los círculos con los nuevos valores
+		gtk_widget_queue_draw(GTK_WIDGET(g->darea1));
+		gtk_widget_queue_draw(GTK_WIDGET(g->darea2));
+		gtk_widget_queue_draw(GTK_WIDGET(g->darea3));
+		gtk_widget_queue_draw(GTK_WIDGET(g->darea4));
+
+		// Reproduce el sonido cuando hay algún cambio
+		system("mpg123 ./sound.mp3");
 	}
 	else {
-		// Si no hay match: Mantiene para pintar los últimos valores
+		// Si no hay match: No pinta los círculos de nuevo, deja los que hay
 		printf("No Match => %d %d %d %d [ANTERIOR] \n", g->p1, g->p2, g->p3, g->p4);
 	}
 
-	// Vuelve a pintar los 4 círculos
-	gtk_widget_queue_draw(GTK_WIDGET(g->darea1));
-	gtk_widget_queue_draw(GTK_WIDGET(g->darea2));
-	gtk_widget_queue_draw(GTK_WIDGET(g->darea3));
-	gtk_widget_queue_draw(GTK_WIDGET(g->darea4));
-
-	// Tras 3" vuelve a al inicio de esta función
+	// Tras 1ms vuelve a al inicio de esta función
 	g_timeout_add(1, timer_cb, g);
 
 	return FALSE;
