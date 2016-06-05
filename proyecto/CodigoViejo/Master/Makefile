@@ -1,5 +1,0 @@
-COMPONENT=MasterAppC
-include $(MAKERULES)
-
-PFLAGS += -I$(TOSROOT)/tos/lib/printf
-PFLAGS += -DNEW_PRINTF_SEMANTICS

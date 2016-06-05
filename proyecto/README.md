@@ -1,7 +1,7 @@
 # Proyecto párking
 [![Build Status](https://travis-ci.org/carrodher/tinyOS.svg?branch=master)](https://travis-ci.org/carrodher/tinyOS)
 [![NesC](https://img.shields.io/badge/NesC-1.3.5-red.svg)](http://nescc.sourceforge.net/)
-[![License](https://img.shields.io/badge/License-BY/NC-yellow.svg)](https://github.com/carrodher/tinyOS/blob/master/LICENSE.markdown)
+[![License](https://img.shields.io/badge/License-GNU-yellow.svg)](https://github.com/carrodher/tinyOS/blob/master/LICENSE.markdown)
 
 ## Introducción
 En este proyecto se pretende realizar un sistema de control de un párking inteligente, para ello contamos con 4 nodos fijos (uno en cada esquina del párking) y un nodo móvil en el coche.
