@@ -1,2 +1,0 @@
-COMPONENT=MovilAppC
-include $(MAKERULES)

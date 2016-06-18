@@ -1,2 +1,0 @@
-COMPONENT=FijoAppC
-include $(MAKERULES)
