@@ -8,10 +8,10 @@ En este proyecto se pretende realizar un sistema de control de un párking intel
 
 Mediante algoritmos de posicionamiento, se determina cuándo el coche se aproxima al párking desde la calle y cuándo abandona el párking. Una vez dentro del párking se indica qué plazas hay libres para que aparque, y una vez aparcado se registra la plaza.
 
-![alt tag](https://github.com/carrodher/tinyOS/blob/master/proyecto/Diagramas/esquemaInicial.png "Esquema inicial")
+![alt tag](https://github.com/carrodher/tinyOS/blob/master/src/Docs/Diagramas/esquemaInicial.png "Esquema inicial")
 
 
-## Componentes
+## Estructura
 1. **Nodo móvil**
 
     Este nodo se encuentra en los robots móviles que simulan los coches, y mediante la pulsación del botón indica su llegada al párking.
@@ -34,7 +34,7 @@ Mediante algoritmos de posicionamiento, se determina cuándo el coche se aproxim
 
 ## GUI
 
-![alt tag](https://github.com/carrodher/tinyOS/blob/master/proyecto/Diagramas/gui.png "GUI")
+![alt tag](https://github.com/carrodher/tinyOS/blob/master/src/Docs/Diagramas/gui.png "GUI")
 
 Para ejecutar la interfaz gráfica, en el equipo conectado al nodo máster hacer lo siguiente:
 ```shell
